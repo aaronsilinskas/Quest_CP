@@ -11,10 +11,10 @@ class State(object):
         return ''
 
     def enter(self):
-        print("Entering state: {}".format(self.name))
+        print("STATE -> {}".format(self.name))
 
     def exit(self):
-        print("Exiting state: {}".format(self.name))
+        print("STATE <- {}".format(self.name))
 
     def update(self, ellapsed):
         return self.name

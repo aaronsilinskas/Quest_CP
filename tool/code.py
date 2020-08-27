@@ -26,60 +26,90 @@ trigger.pull = Pull.UP
 # States
 state_machine = StateMachine()
 
-class TestState1(State):
-
-    def __init__(self):
-        self.some_var = 123
-        self.time_remaining = None
+class Idle(State):
 
     @property
     def name(self):
-        return 'test1'
-
-    def enter(self):
-        State.enter(self)
-        self.time_remaining = 2
-
-    def exit(self):
-        State.exit(self)
+        return 'idle'
 
     def update(self, ellapsed):
-        print("Test 1 Remaining: {}, Ellapsed: {}".format(self.time_remaining, ellapsed))
-
-        self.time_remaining -= ellapsed
-        if self.time_remaining <= 0:
-            return 'test2'
+        if trigger.value == 0:
+            return 'triggered'
         return self.name
 
-state_machine.add_state(TestState1())
+state_machine.add_state(Idle())
 
-class TestState2(State):
+class Triggered(State):
 
     def __init__(self):
         self.time_remaining = None
 
     @property
     def name(self):
-        return 'test2'
+        return 'triggered'
 
     def enter(self):
         State.enter(self)
-        self.time_remaining = 3
-
-    def exit(self):
-        State.exit(self)
+        self.time_remaining = 0.5
 
     def update(self, ellapsed):
-        print("Test 2 Remaining: {}, Ellapsed: {}".format(self.time_remaining, ellapsed))
+        if trigger.value == 1:
+            return 'casting'
 
         self.time_remaining -= ellapsed
         if self.time_remaining <= 0:
-            return 'test1'
+            return 'weaving'
         return self.name
 
-state_machine.add_state(TestState2())
+state_machine.add_state(Triggered())
 
-state_machine.go_to_state('test1')
+class Casting(State):
+
+    def __init__(self):
+        self.spell = None
+
+    @property
+    def name(self):
+        return 'casting'
+
+    def enter(self):
+        State.enter(self)
+
+        self.spell = 'Fireball!!!!'
+        # Need to get last spell from spell slots
+
+    def update(self, ellapsed):
+        print("Casting: {}".format(self.spell))
+
+        return 'idle'
+
+state_machine.add_state(Casting())
+
+class Weaving(State):
+
+    def __init__(self):
+        self.spell = None
+
+    @property
+    def name(self):
+        return 'weaving'
+
+    def enter(self):
+        State.enter(self)
+
+    def update(self, ellapsed):
+        x, y, z = [
+        value / adafruit_lis3dh.STANDARD_GRAVITY for value in lis3dh.acceleration
+        ]
+        print("(%0.3f,%0.3f,%0.3f)" % (x, y, z))
+
+        if trigger.value == 1:
+            return 'idle'
+        return 'weaving'
+
+state_machine.add_state(Weaving())
+
+state_machine.go_to_state('idle')
 
 while True:
 
@@ -120,13 +150,10 @@ while True:
         value / adafruit_lis3dh.STANDARD_GRAVITY for value in lis3dh.acceleration
     ]
 
-    print("(%0.3f,%0.3f,%0.3f)" % (x, y, z))
+    # print("(%0.3f,%0.3f,%0.3f)" % (x, y, z))
 
     # x = pointing up or down. Up = -1, Down = 1
     # z, y = rotation. Flat = abs(z)=1, y=0. On edge = abs(z)=0,abs(y)=1
-
-    if trigger.value == 0:
-        print("trigger held")
 
     state_machine.update()
 
