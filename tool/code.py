@@ -1,5 +1,4 @@
 import time
-import math
 import board
 from digitalio import DigitalInOut, Direction, Pull
 import busio
@@ -89,6 +88,9 @@ class Weaving(State):
 
     def __init__(self):
         self.spell = None
+        self.initial_acceleration = [None, None, None]
+        self.min_acceleration = [None, None, None]
+        self.max_acceleration = [None, None, None]
 
     @property
     def name(self):
@@ -97,15 +99,38 @@ class Weaving(State):
     def enter(self):
         State.enter(self)
 
+        self.initial_acceleration = self.measure()
+        self.min_acceleration = self.initial_acceleration.copy()
+        self.max_acceleration = self.initial_acceleration.copy()
+
     def update(self, ellapsed):
-        x, y, z = [
-        value / adafruit_lis3dh.STANDARD_GRAVITY for value in lis3dh.acceleration
-        ]
-        print("(%0.3f,%0.3f,%0.3f)" % (x, y, z))
+        sample = self.measure()
+
+        self.min_acceleration = list(map(min, sample, self.min_acceleration))
+        self.max_acceleration = list(map(max, sample, self.max_acceleration))
+
+        self.print_xyz("Sample", sample)
 
         if trigger.value == 1:
+            print("Trigger Up!")
+            self.print_xyz("Initial", self.initial_acceleration)
+            self.print_xyz("Min", self.min_acceleration)
+            self.print_xyz("Max", self.max_acceleration)
+
+            diffMax = list(map(lambda x, y: x - y, self.initial_acceleration, self.max_acceleration))
+            self.print_xyz("DiffMax", diffMax)
+
             return 'idle'
         return 'weaving'
+
+    def measure(self):
+        return [
+            value / adafruit_lis3dh.STANDARD_GRAVITY for value in lis3dh.acceleration
+        ]
+
+    def print_xyz(self, name, measurement):
+        x, y, z = measurement
+        print("(%0.3f,%0.3f,%0.3f) %s" % (x, y, z, name))
 
 state_machine.add_state(Weaving())
 
@@ -146,9 +171,9 @@ while True:
 
     # Read accelerometer values (in m / s ^ 2).  Returns a 3-tuple of x, y,
     # z axis values.  Divide them by 9.806 to convert to Gs.
-    x, y, z = [
-        value / adafruit_lis3dh.STANDARD_GRAVITY for value in lis3dh.acceleration
-    ]
+    # x, y, z = [
+    #     value / adafruit_lis3dh.STANDARD_GRAVITY for value in lis3dh.acceleration
+    # ]
 
     # print("(%0.3f,%0.3f,%0.3f)" % (x, y, z))
 
