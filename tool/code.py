@@ -52,7 +52,7 @@ def diff_xyz(initial, current):
 class GlobalState:
     initial_acceleration = [None, None, None]
     weave_spell = None
-    weave_progress = 0
+    weave_power = 0
 
 gs = GlobalState()
 
@@ -115,7 +115,7 @@ class Casting(State):
         print("Casting: {}".format(gs.weave_spell.name))
 
         gs.weave_spell = None
-        gs.weave_progress = 0
+        gs.weave_power = 0
         return 'idle'
 
 state_machine.add_state(Casting())
@@ -151,8 +151,8 @@ class Weaving(State):
         # print_xyz("Max", self.max_acceleration)
 
         self.ellapsed_total += ellapsed_time
-        gs.weave_progress = min(self.ellapsed_total / 4, 1.0)
-        print("Weave progress ", gs.weave_progress)
+        gs.weave_power = min(self.ellapsed_total / 4, 1.0)
+        print("Weave power ", gs.weave_power)
 
         if trigger.value == 1:
             print("Trigger Up!")
@@ -163,11 +163,37 @@ class Weaving(State):
             diffMax = diff_xyz(gs.initial_acceleration, self.max_acceleration)
             print_xyz("DiffMax", diffMax)
 
-            return 'idle'
+            return 'weaved'
         return 'weaving'
 
 
 state_machine.add_state(Weaving())
+
+class Weaved(State):
+    def __init__(self):
+        self.ellapsed_total = 0
+
+    @property
+    def name(self):
+        return 'weaved'
+
+    def enter(self):
+        State.enter(self)
+        self.ellapsed_total = 0
+
+    def update(self, ellapsed_time):
+        self.ellapsed_total += ellapsed_time
+        if (self.ellapsed_total > 5):
+            gs.weave_power = max(0, 10.0 - self.ellapsed_total) / 5
+
+        if (gs.weave_power == 0):
+            gs.weave_spell = None
+            return 'idle'
+        if trigger.value == 0:
+            return 'triggered'
+        return 'weaved'
+
+state_machine.add_state(Weaved())
 
 state_machine.go_to_state('idle')
 
@@ -184,7 +210,8 @@ while True:
     state_machine.update(ellapsed_time)
 
     if (gs.weave_spell):
-        color = int(255 * gs.weave_progress)
+        print("Power: ", gs.weave_power)
+        color = int(255 * gs.weave_power)
         pixels.fill((color, color, color))
         pixels.show()
     else:
