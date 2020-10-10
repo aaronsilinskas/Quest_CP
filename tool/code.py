@@ -1,46 +1,10 @@
 import time
-import board
-from digitalio import DigitalInOut, Direction, Pull
-import busio
-import adafruit_lis3dh
-import adafruit_dotstar
+
+from hardware import measure_acceleration, is_trigger_down, pixels
 from state import State, StateMachine
 from spell import select_spell
 
-# == Todo ==
-# charge up
-# select spell by initial and current
-# charge down if spell doesn't match
-
-# == Hardware ==
-# Use the CircuitPlayground built-in accelerometer if available,
-# otherwise check I2C pins.
-if hasattr(board, "ACCELEROMETER_SCL"):
-    i2c = busio.I2C(board.ACCELEROMETER_SCL, board.ACCELEROMETER_SDA)
-    int1 = DigitalInOut(board.ACCELEROMETER_INTERRUPT)
-    lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c, address=0x19, int1=int1)
-else:
-    i2c = busio.I2C(board.SCL, board.SDA)
-    int1 = DigitalInOut(board.D6)  # Set to correct pin for interrupt!
-    lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c, int1=int1)
-lis3dh.range = adafruit_lis3dh.RANGE_2_G
-
-# LEDs
-pixels = adafruit_dotstar.DotStar(board.A2, board.A1, 14, brightness=0.05,
-                                  auto_write=False)
-
-# Trigger
-trigger = DigitalInOut(board.A3)
-trigger.direction = Direction.INPUT
-trigger.pull = Pull.UP
-
 # == Global Functions ==
-def measure():
-    return [
-        value / adafruit_lis3dh.STANDARD_GRAVITY for value
-        in lis3dh.acceleration
-    ]
-
 def print_xyz(name, measurement):
     x, y, z = measurement
     print("(%0.3f,%0.3f,%0.3f) %s" % (x, y, z, name))
@@ -50,6 +14,7 @@ def diff_xyz(initial, current):
 
 # == States ==
 class GlobalState:
+    trigger_down = False
     initial_acceleration = [None, None, None]
     weave_spell = None
     weave_power = 0
@@ -68,7 +33,7 @@ class Idle(State):
         State.enter(self)
 
     def update(self, ellapsed_time):
-        if trigger.value == 0:
+        if gs.trigger_down:
             return 'triggered'
         return self.name
 
@@ -87,15 +52,15 @@ class Triggered(State):
         State.enter(self)
         self.time_remaining = 0.5
 
-        gs.initial_acceleration = measure()
+        gs.initial_acceleration = measure_acceleration()
 
     def update(self, ellapsed_time):
-        if (trigger.value == 1) and (gs.weave_spell):
+        if (not gs.trigger_down) and (gs.weave_spell):
             return 'casting'
 
         self.time_remaining -= ellapsed_time
         if self.time_remaining <= 0:
-            if trigger.value == 1:
+            if not gs.trigger_down:
                 return 'idle'
             else:
                 return 'weaving'
@@ -142,7 +107,7 @@ class Weaving(State):
         gs.weave_spell = select_spell(gs.initial_acceleration)
 
     def update(self, ellapsed_time):
-        sample = measure()
+        sample = measure_acceleration()
         print_xyz("Sample", sample)
 
         self.min_acceleration = list(map(min, sample, self.min_acceleration))
@@ -154,7 +119,7 @@ class Weaving(State):
         gs.weave_power = min(self.ellapsed_total / 4, 1.0)
         print("Weave power ", gs.weave_power)
 
-        if trigger.value == 1:
+        if not gs.trigger_down:
             print("Trigger Up!")
             print_xyz("Initial", gs.initial_acceleration)
             print_xyz("Min", self.min_acceleration)
@@ -189,7 +154,7 @@ class Weaved(State):
         if (gs.weave_power == 0):
             gs.weave_spell = None
             return 'idle'
-        if trigger.value == 0:
+        if gs.trigger_down:
             return 'triggered'
         return 'weaved'
 
@@ -203,6 +168,8 @@ while True:
     current_time = time.monotonic()
     ellapsed_time = current_time - last_update_time
     last_update_time = time.monotonic()
+
+    gs.trigger_down = is_trigger_down()
 
     # x = pointing up or down. Up = -1, Down = 1
     # z, y = rotation. Flat = abs(z)=1, y=0. On edge = abs(z)=0,abs(y)=1
