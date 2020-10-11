@@ -1,4 +1,3 @@
-import random
 
 # Spell
 class Spell(object):
@@ -13,7 +12,10 @@ class Spell(object):
         pass
 
     def draw_simple(self, pixels, color, power):
-        pixels.fill((int(color[0] * power), int(color[1] * power), int(color[2] * power)))
+        r = int(color[0] * power)
+        g = int(color[1] * power)
+        b = int(color[2] * power)
+        pixels.fill((r, g, b))
         pixels.show()
 
 class SpellState:
@@ -44,42 +46,30 @@ class SpellState:
         self.__power = v
         self.max_power = max(self.__power, v)
 
-
-spells = []
-
-def add_spell(spell):
-    spells.append(spell)
-
 class LightSpell(Spell):
 
     def draw(self, pixels, state, ellapsed):
         self.draw_simple(pixels, (255, 255, 255), state.power)
 
-add_spell(LightSpell())
-
 class FireSpell(Spell):
     def draw(self, pixels, state, ellapsed):
         self.draw_simple(pixels, (255, 0, 0), state.power)
-
-add_spell(FireSpell())
 
 class WaterSpell(Spell):
     def draw(self, pixels, state, ellapsed):
         self.draw_simple(pixels, (0, 64, 255), state.power)
 
-add_spell(WaterSpell())
 
 class EarthSpell(Spell):
     def draw(self, pixels, state, ellapsed):
-        self.draw_simple(pixels, (210,105,30), state.power)
+        self.draw_simple(pixels, (210, 105, 30), state.power)
 
-add_spell(EarthSpell())
 
 class WindSpell(Spell):
     def draw(self, pixels, state, ellapsed):
         self.draw_simple(pixels, (255, 0, 255), state.power)
 
-add_spell(WindSpell())
+spells = [LightSpell(), FireSpell(), WaterSpell(), EarthSpell(), WindSpell()]
 
 current_spell = 0
 def select_spell(initial_acceleration, current_acceleration):
