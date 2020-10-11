@@ -77,7 +77,7 @@ class Weaving(State):
         self.max_acceleration = gs.initial_acceleration.copy()
 
         spell = select_spell(gs.initial_acceleration, gs.current_acceleration)
-        gs.weaving_spell = SpellState(spell, 0, 10)
+        gs.weaving_spell = SpellState(spell)
 
     def update(self, ellapsed_time):
         self.ellapsed_total += ellapsed_time
@@ -114,12 +114,10 @@ state_machine.go_to_state('Idle')
 
 last_update_time = time.monotonic()
 
-def draw_spell(spell_state, pixels):
+def draw_spell(spell_state, pixels, ellapsed_time):
     print("Power: ", spell_state.power)
 
-    color = int(255 * spell_state.power)
-    pixels.fill((color, color, color))
-    pixels.show()
+    spell_state.spell.draw(pixels, spell_state, ellapsed_time)
 
 while True:
     current_time = time.monotonic()
@@ -142,9 +140,9 @@ while True:
     gs.active_spells = [spell for spell in gs.active_spells if spell.lifespan > 0]
 
     if gs.weaving_spell:
-        draw_spell(gs.weaving_spell, pixels)
+        draw_spell(gs.weaving_spell, pixels, ellapsed_time)
     elif len(gs.active_spells) > 0:
-        draw_spell(gs.active_spells[0], pixels)
+        draw_spell(gs.active_spells[0], pixels, ellapsed_time)
     else:
         pixels.fill((0, 0, 0))
         pixels.show()
