@@ -19,7 +19,6 @@ class Spell(object):
         for i in range(pixels.n):
             twinkle = random.uniform(0.5, 1.5)
             pixels[i] = (min(int(r * twinkle), 255), min(int(g * twinkle), 255), min(int(b * twinkle), 255))
-        pixels.show()
 
 class SpellState:
 
