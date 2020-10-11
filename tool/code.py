@@ -114,9 +114,10 @@ state_machine.go_to_state('Idle')
 
 last_update_time = time.monotonic()
 
-def show_spell_power(power):
-    print("Power: ", power)
-    color = int(255 * power)
+def draw_spell(spell_state, pixels):
+    print("Power: ", spell_state.power)
+
+    color = int(255 * spell_state.power)
     pixels.fill((color, color, color))
     pixels.show()
 
@@ -135,13 +136,15 @@ while True:
 
     for spell in gs.active_spells:
         spell.lifespan = max(spell.lifespan - ellapsed_time, 0)
+        if spell.lifespan <= 1:
+            spell.power = max(spell.max_power * spell.lifespan, 0)
 
     gs.active_spells = [spell for spell in gs.active_spells if spell.lifespan > 0]
 
     if gs.weaving_spell:
-        show_spell_power(gs.weaving_spell.power)
+        draw_spell(gs.weaving_spell, pixels)
     elif len(gs.active_spells) > 0:
-        show_spell_power(gs.active_spells[0].power)
+        draw_spell(gs.active_spells[0], pixels)
     else:
         pixels.fill((0, 0, 0))
         pixels.show()
