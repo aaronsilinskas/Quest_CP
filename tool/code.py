@@ -17,8 +17,8 @@ class GlobalState:
     trigger_down = False
     initial_acceleration = [None, None, None]
     current_acceleration = [None, None, None]
-    weaving_spell = None
-    active_spells = []
+    weaving_state = None
+    active_spell_states = []
 
 gs = GlobalState()
 
@@ -42,7 +42,7 @@ class Triggered(State):
         gs.initial_acceleration = measure_acceleration()
 
     def update(self, ellapsed_time):
-        if (not gs.trigger_down) and (len(gs.active_spells) > 0):
+        if (not gs.trigger_down) and (len(gs.active_spell_states) > 0):
             return 'Casting'
 
         self.time_remaining -= ellapsed_time
@@ -58,7 +58,7 @@ state_machine.add_state(Triggered())
 class Casting(State):
 
     def update(self, ellapsed_time):
-        spell = gs.active_spells.pop(0)
+        spell = gs.active_spell_states.pop(0)
 
         print("Casting: {} at power {}".format(spell.name, spell.power))
 
@@ -77,10 +77,22 @@ class Weaving(State):
         self.max_acceleration = gs.initial_acceleration.copy()
 
         spell = select_spell(gs.initial_acceleration, gs.current_acceleration)
-        gs.weaving_spell = SpellState(spell)
+        gs.weaving_state = SpellState(spell)
 
     def update(self, ellapsed_time):
         self.ellapsed_total += ellapsed_time
+
+        spell = select_spell(gs.initial_acceleration, gs.current_acceleration)
+        if spell.name == gs.weaving_state.name:
+            gs.weaving_state.power = min(self.ellapsed_total / 4, 1.0)
+        else:
+            loss = ellapsed_time / 2  # fade over 2 seconds
+            gs.weaving_state.power = max(gs.weaving_state.power - loss, 0)
+            if gs.weaving_state.power == 0:
+                gs.weaving_state = SpellState(spell)
+                self.ellapsed_total = 0
+
+        print("Weave power ", gs.weaving_state.power)
 
         # print_xyz("Current acceleration", gs.current_acceleration)
 
@@ -89,12 +101,9 @@ class Weaving(State):
         # print_xyz("Min", self.min_acceleration)
         # print_xyz("Max", self.max_acceleration)
 
-        gs.weaving_spell.power = min(self.ellapsed_total / 4, 1.0)
-        print("Weave power ", gs.weaving_spell.power)
-
         if not gs.trigger_down:
-            gs.active_spells.insert(0, gs.weaving_spell)
-            gs.weaving_spell = None
+            gs.active_spell_states.insert(0, gs.weaving_state)
+            gs.weaving_state = None
 
             print("Trigger Up!")
             print_xyz("Initial", gs.initial_acceleration)
@@ -128,17 +137,17 @@ while True:
 
     state_machine.update(ellapsed_time)
 
-    for spell in gs.active_spells:
+    for spell in gs.active_spell_states:
         spell.lifespan = max(spell.lifespan - ellapsed_time, 0)
         if spell.lifespan <= 1:
             spell.power = max(spell.max_power * spell.lifespan, 0)
 
-    gs.active_spells = [spell for spell in gs.active_spells if spell.lifespan > 0]
+    gs.active_spell_states = [spell for spell in gs.active_spell_states if spell.lifespan > 0]
 
-    if gs.weaving_spell:
-        draw_spell(gs.weaving_spell, pixels, ellapsed_time)
-    elif len(gs.active_spells) > 0:
-        draw_spell(gs.active_spells[0], pixels, ellapsed_time)
+    if gs.weaving_state:
+        draw_spell(gs.weaving_state, pixels, ellapsed_time)
+    elif len(gs.active_spell_states) > 0:
+        draw_spell(gs.active_spell_states[0], pixels, ellapsed_time)
     else:
         pixels.fill((0, 0, 0))
         pixels.show()

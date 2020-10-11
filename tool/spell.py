@@ -77,7 +77,7 @@ spells = [LightSpell(), FireSpell(), WaterSpell(), EarthSpell(), WindSpell()]
 def select_spell(initial_acceleration, current_acceleration):
     # x = pointing up or down. Up = -1, Down = 1
     # z, y = rotation. Flat = abs(z)=1, y=0. On edge = abs(z)=0,abs(y)=1
-    vert_dir = initial_acceleration[0]
+    vert_dir = current_acceleration[0]
     if vert_dir < -0.75:
         return LightSpell()
     elif vert_dir < -0.25:
