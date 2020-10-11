@@ -3,6 +3,7 @@ from digitalio import DigitalInOut, Direction, Pull
 import busio
 import adafruit_lis3dh
 import adafruit_dotstar
+import audioio
 
 # Use the CircuitPlayground built-in accelerometer if available,
 # otherwise check I2C pins.
@@ -20,6 +21,16 @@ lis3dh.range = adafruit_lis3dh.RANGE_2_G
 # LEDs
 pixels = adafruit_dotstar.DotStar(board.A2, board.A1, 14, brightness=0.05,
                                   auto_write=False)
+
+# Audio
+if hasattr(board, "SPEAKER"):
+    speaker_enable = DigitalInOut(board.SPEAKER_ENABLE)
+    speaker_enable.direction = Direction.OUTPUT
+    speaker_enable.value = True
+
+    audio = audioio.AudioOut(board.SPEAKER)
+else:
+    audio = audioio.AudioOut(board.A0)
 
 # Trigger
 trigger = DigitalInOut(board.A3)

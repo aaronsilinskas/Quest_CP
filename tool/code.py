@@ -3,6 +3,7 @@ import time
 from hardware import measure_acceleration, is_trigger_down, pixels
 from state import State, StateMachine
 from spell import select_spell, SpellState
+from sound import play_cast, play_weave_complete
 
 # == Global Functions ==
 def print_xyz(name, measurement):
@@ -67,6 +68,8 @@ class Casting(State):
 
         print("Casting: {} at power {}".format(gs.casting_spell.name, gs.casting_spell.power))
 
+        play_cast()
+
     def update(self, ellapsed_time):
         self.ellapsed_total += ellapsed_time
         gs.casting_progress = min(self.ellapsed_total / 0.5, 1)  # take 1 seconds to cast
@@ -86,6 +89,7 @@ class Weaving(State):
         self.ellapsed_total = 0
         self.min_acceleration = gs.initial_acceleration.copy()
         self.max_acceleration = gs.initial_acceleration.copy()
+        self.weave_complete = False
 
         spell = select_spell(gs.initial_acceleration, gs.current_acceleration)
         gs.weaving_state = SpellState(spell)
@@ -95,15 +99,20 @@ class Weaving(State):
 
         spell = select_spell(gs.initial_acceleration, gs.current_acceleration)
         if spell.name == gs.weaving_state.name:
-            gs.weaving_state.power = min(self.ellapsed_total / 4, 1.0)
+            gs.weaving_state.power = min(self.ellapsed_total / 3, 1.0)
         else:
             loss = ellapsed_time / 2  # fade over 2 seconds
             gs.weaving_state.power = max(gs.weaving_state.power - loss, 0)
             if gs.weaving_state.power == 0:
                 gs.weaving_state = SpellState(spell)
                 self.ellapsed_total = 0
+                self.weave_complete = False
 
-        print("Weave power ", gs.weaving_state.power)
+        if (gs.weaving_state.power == 1) and (not self.weave_complete):
+            self.weave_complete = True
+            play_weave_complete()
+
+        # print("Weave power ", gs.weaving_state.power)
 
         # print_xyz("Current acceleration", gs.current_acceleration)
 
