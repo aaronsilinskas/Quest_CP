@@ -25,28 +25,14 @@ state_machine = StateMachine()
 
 class Idle(State):
 
-    @property
-    def name(self):
-        return 'idle'
-
-    def enter(self):
-        State.enter(self)
-
     def update(self, ellapsed_time):
         if gs.trigger_down:
-            return 'triggered'
+            return 'Triggered'
         return self.name
 
 state_machine.add_state(Idle())
 
 class Triggered(State):
-
-    def __init__(self):
-        self.time_remaining = None
-
-    @property
-    def name(self):
-        return 'triggered'
 
     def enter(self):
         State.enter(self)
@@ -56,45 +42,30 @@ class Triggered(State):
 
     def update(self, ellapsed_time):
         if (not gs.trigger_down) and (gs.weave_spell):
-            return 'casting'
+            return 'Casting'
 
         self.time_remaining -= ellapsed_time
         if self.time_remaining <= 0:
             if not gs.trigger_down:
-                return 'idle'
+                return 'Idle'
             else:
-                return 'weaving'
+                return 'Weaving'
         return self.name
 
 state_machine.add_state(Triggered())
 
 class Casting(State):
-    @property
-    def name(self):
-        return 'casting'
-
-    def enter(self):
-        State.enter(self)
 
     def update(self, ellapsed_time):
         print("Casting: {}".format(gs.weave_spell.name))
 
         gs.weave_spell = None
         gs.weave_power = 0
-        return 'idle'
+        return 'Idle'
 
 state_machine.add_state(Casting())
 
 class Weaving(State):
-
-    def __init__(self):
-        self.ellapsed_total = 0
-        self.min_acceleration = [None, None, None]
-        self.max_acceleration = [None, None, None]
-
-    @property
-    def name(self):
-        return 'weaving'
 
     def enter(self):
         State.enter(self)
@@ -128,19 +99,13 @@ class Weaving(State):
             diffMax = diff_xyz(gs.initial_acceleration, self.max_acceleration)
             print_xyz("DiffMax", diffMax)
 
-            return 'weaved'
-        return 'weaving'
+            return 'Weaved'
+        return 'Weaving'
 
 
 state_machine.add_state(Weaving())
 
 class Weaved(State):
-    def __init__(self):
-        self.ellapsed_total = 0
-
-    @property
-    def name(self):
-        return 'weaved'
 
     def enter(self):
         State.enter(self)
@@ -153,14 +118,14 @@ class Weaved(State):
 
         if (gs.weave_power == 0):
             gs.weave_spell = None
-            return 'idle'
+            return 'Idle'
         if gs.trigger_down:
-            return 'triggered'
-        return 'weaved'
+            return 'Triggered'
+        return 'Weaved'
 
 state_machine.add_state(Weaved())
 
-state_machine.go_to_state('idle')
+state_machine.go_to_state('Idle')
 
 last_update_time = time.monotonic()
 

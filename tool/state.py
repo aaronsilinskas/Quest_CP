@@ -7,7 +7,7 @@ class State(object):
 
     @property
     def name(self):
-        return ''
+        return type(self).__name__
 
     def enter(self):
         print("STATE -> {}".format(self.name))
