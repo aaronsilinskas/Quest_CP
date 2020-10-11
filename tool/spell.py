@@ -1,3 +1,4 @@
+import random
 
 # Spell
 class Spell(object):
@@ -12,10 +13,12 @@ class Spell(object):
         pass
 
     def draw_simple(self, pixels, color, power):
-        r = int(color[0] * power)
-        g = int(color[1] * power)
-        b = int(color[2] * power)
-        pixels.fill((r, g, b))
+        r = color[0] * power
+        g = color[1] * power
+        b = color[2] * power
+        for i in range(pixels.n):
+            twinkle = random.uniform(0.5, 1.5)
+            pixels[i] = (min(int(r * twinkle), 255), min(int(g * twinkle), 255), min(int(b * twinkle), 255))
         pixels.show()
 
 class SpellState:
@@ -71,10 +74,18 @@ class WindSpell(Spell):
 
 spells = [LightSpell(), FireSpell(), WaterSpell(), EarthSpell(), WindSpell()]
 
-current_spell = 0
 def select_spell(initial_acceleration, current_acceleration):
-    global current_spell
-    current_spell = current_spell + 1
-    if current_spell >= len(spells):
-        current_spell = 0
-    return spells[current_spell]
+    # x = pointing up or down. Up = -1, Down = 1
+    # z, y = rotation. Flat = abs(z)=1, y=0. On edge = abs(z)=0,abs(y)=1
+    vert_dir = initial_acceleration[0]
+    if vert_dir < -0.75:
+        return LightSpell()
+    elif vert_dir < -0.25:
+        return WindSpell()
+    elif vert_dir < 0.25:
+        return FireSpell()
+    elif vert_dir < 0.75:
+        return WaterSpell()
+
+    return EarthSpell()
+

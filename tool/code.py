@@ -115,8 +115,7 @@ state_machine.go_to_state('Idle')
 last_update_time = time.monotonic()
 
 def draw_spell(spell_state, pixels, ellapsed_time):
-    print("Power: ", spell_state.power)
-
+    # print("Power: ", spell_state.power)
     spell_state.spell.draw(pixels, spell_state, ellapsed_time)
 
 while True:
@@ -126,9 +125,6 @@ while True:
 
     gs.trigger_down = is_trigger_down()
     gs.current_acceleration = measure_acceleration()
-
-    # x = pointing up or down. Up = -1, Down = 1
-    # z, y = rotation. Flat = abs(z)=1, y=0. On edge = abs(z)=0,abs(y)=1
 
     state_machine.update(ellapsed_time)
 
