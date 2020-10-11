@@ -141,7 +141,7 @@ def apply_brighten(pixels, row, col, offset):
     if i is None:
         return
     pixel = pixels[i]
-    brighten = int(128 / offset)
+    brighten = int(192 / offset)
     r = min(pixel[0] + brighten, 255)
     g = min(pixel[1] + brighten, 255)
     b = min(pixel[2] + brighten, 255)
