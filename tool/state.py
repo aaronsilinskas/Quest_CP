@@ -1,7 +1,5 @@
-
 # State Machine
 class State(object):
-
     def __init__(self):
         pass
 
@@ -18,8 +16,8 @@ class State(object):
     def update(self, ellapsed):
         return self.name
 
-class StateMachine(object):
 
+class StateMachine(object):
     def __init__(self):
         self.state = None
         self.states = {}

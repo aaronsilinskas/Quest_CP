@@ -10,8 +10,10 @@ def print_xyz(name, measurement):
     x, y, z = measurement
     print("(%0.3f,%0.3f,%0.3f) %s" % (x, y, z, name))
 
+
 def diff_xyz(initial, current):
     return list(map(lambda x, y: x - y, initial, current))
+
 
 # == States ==
 class GlobalState:
@@ -23,21 +25,23 @@ class GlobalState:
     casting_spell = None
     casting_progress = 0
 
+
 gs = GlobalState()
 
 state_machine = StateMachine()
 
-class Idle(State):
 
+class Idle(State):
     def update(self, ellapsed_time):
         if gs.trigger_down:
-            return 'Triggered'
+            return "Triggered"
         return self.name
+
 
 state_machine.add_state(Idle())
 
-class Triggered(State):
 
+class Triggered(State):
     def enter(self):
         State.enter(self)
         self.time_remaining = 0.5
@@ -46,42 +50,50 @@ class Triggered(State):
 
     def update(self, ellapsed_time):
         if (not gs.trigger_down) and (len(gs.active_spell_states) > 0):
-            return 'Casting'
+            return "Casting"
 
         self.time_remaining -= ellapsed_time
         if self.time_remaining <= 0:
             if not gs.trigger_down:
-                return 'Idle'
+                return "Idle"
             else:
-                return 'Weaving'
+                return "Weaving"
         return self.name
+
 
 state_machine.add_state(Triggered())
 
-class Casting(State):
 
+class Casting(State):
     def enter(self):
         State.enter(self)
         self.ellapsed_total = 0
         gs.casting_spell = gs.active_spell_states.pop(0)
         gs.casting_progress = 0
 
-        print("Casting: {} at power {}".format(gs.casting_spell.name, gs.casting_spell.power))
+        print(
+            "Casting: {} at power {}".format(
+                gs.casting_spell.name, gs.casting_spell.power
+            )
+        )
 
         play_cast()
 
     def update(self, ellapsed_time):
         self.ellapsed_total += ellapsed_time
-        gs.casting_progress = min(self.ellapsed_total / 0.5, 1)  # take 1 seconds to cast
+        gs.casting_progress = min(
+            self.ellapsed_total / 0.5, 1
+        )  # take 1 seconds to cast
         if gs.casting_progress == 1:
             gs.casting_spell = None
-            return 'Idle'
-        return 'Casting'
+            return "Idle"
+        return "Casting"
+
 
 state_machine.add_state(Casting())
 
-class Weaving(State):
 
+class Weaving(State):
     def enter(self):
         State.enter(self)
 
@@ -116,8 +128,12 @@ class Weaving(State):
 
         # print_xyz("Current acceleration", gs.current_acceleration)
 
-        self.min_acceleration = list(map(min, gs.current_acceleration, self.min_acceleration))
-        self.max_acceleration = list(map(max, gs.current_acceleration, self.max_acceleration))
+        self.min_acceleration = list(
+            map(min, gs.current_acceleration, self.min_acceleration)
+        )
+        self.max_acceleration = list(
+            map(max, gs.current_acceleration, self.max_acceleration)
+        )
         # print_xyz("Min", self.min_acceleration)
         # print_xyz("Max", self.max_acceleration)
 
@@ -133,17 +149,20 @@ class Weaving(State):
             diffMax = diff_xyz(gs.initial_acceleration, self.max_acceleration)
             print_xyz("DiffMax", diffMax)
 
-            return 'Idle'
-        return 'Weaving'
+            return "Idle"
+        return "Weaving"
+
 
 state_machine.add_state(Weaving())
+
 
 def map_pixel(row, col):
     if (row < 0) or (row >= pixels.n / 2):
         return None
-    if (col == 0):
+    if col == 0:
         return row
     return pixels.n - row - 1
+
 
 def apply_brighten(pixels, row, col, offset):
     i = map_pixel(row, col)
@@ -155,6 +174,7 @@ def apply_brighten(pixels, row, col, offset):
     g = min(pixel[1] + brighten, 255)
     b = min(pixel[2] + brighten, 255)
     pixels[i] = (r, g, b)
+
 
 def draw_casting(spell_state, pixels, ellapsed_time, progress):
     draw_spell(spell_state, pixels, ellapsed_time)
@@ -171,11 +191,13 @@ def draw_casting(spell_state, pixels, ellapsed_time, progress):
             if i is not None:
                 pixels[i] = (0, 0, 0)
 
+
 def draw_spell(spell_state, pixels, ellapsed_time):
     # print("Power: ", spell_state.power)
     spell_state.spell.draw(pixels, spell_state, ellapsed_time)
 
-state_machine.go_to_state('Idle')
+
+state_machine.go_to_state("Idle")
 last_update_time = time.monotonic()
 
 while True:
@@ -193,7 +215,9 @@ while True:
         if spell.lifespan <= 1:
             spell.power = max(spell.max_power * spell.lifespan, 0)
 
-    gs.active_spell_states = [spell for spell in gs.active_spell_states if spell.lifespan > 0]
+    gs.active_spell_states = [
+        spell for spell in gs.active_spell_states if spell.lifespan > 0
+    ]
 
     if gs.casting_spell:
         draw_casting(gs.casting_spell, pixels, ellapsed_time, gs.casting_progress)

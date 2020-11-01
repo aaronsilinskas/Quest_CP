@@ -18,10 +18,14 @@ class Spell(object):
         b = color[2] * power
         for i in range(pixels.n):
             twinkle = random.uniform(0.5, 1.5)
-            pixels[i] = (min(int(r * twinkle), 255), min(int(g * twinkle), 255), min(int(b * twinkle), 255))
+            pixels[i] = (
+                min(int(r * twinkle), 255),
+                min(int(g * twinkle), 255),
+                min(int(b * twinkle), 255),
+            )
+
 
 class SpellState:
-
     def __init__(self, spell, power=0, lifespan=10):
         self.spell = spell
         self.name = spell.name
@@ -48,14 +52,16 @@ class SpellState:
         self.__power = v
         self.max_power = max(self.__power, v)
 
-class LightSpell(Spell):
 
+class LightSpell(Spell):
     def draw(self, pixels, state, ellapsed):
         self.draw_simple(pixels, (255, 255, 255), state.power)
+
 
 class FireSpell(Spell):
     def draw(self, pixels, state, ellapsed):
         self.draw_simple(pixels, (255, 0, 0), state.power)
+
 
 class WaterSpell(Spell):
     def draw(self, pixels, state, ellapsed):
@@ -71,7 +77,9 @@ class WindSpell(Spell):
     def draw(self, pixels, state, ellapsed):
         self.draw_simple(pixels, (255, 0, 255), state.power)
 
+
 spells = [LightSpell(), FireSpell(), WaterSpell(), EarthSpell(), WindSpell()]
+
 
 def select_spell(initial_acceleration, current_acceleration):
     # x = pointing up or down. Up = -1, Down = 1
@@ -87,4 +95,3 @@ def select_spell(initial_acceleration, current_acceleration):
         return WaterSpell()
 
     return EarthSpell()
-
