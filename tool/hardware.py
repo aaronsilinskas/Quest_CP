@@ -3,7 +3,10 @@ from digitalio import DigitalInOut, Direction, Pull
 import busio
 import adafruit_lis3dh
 import adafruit_dotstar
-import audioio
+try:
+    from audioio import AudioOut
+except ImportError:
+    from audiopwmio import PWMAudioOut as AudioOut
 
 # Use the CircuitPlayground built-in accelerometer if available,
 # otherwise check I2C pins.
@@ -29,9 +32,9 @@ if hasattr(board, "SPEAKER"):
     speaker_enable.direction = Direction.OUTPUT
     speaker_enable.value = True
 
-    audio = audioio.AudioOut(board.SPEAKER)
+    audio = AudioOut(board.SPEAKER)
 else:
-    audio = audioio.AudioOut(board.A0)
+    audio = AudioOut(board.A0)
 
 # Trigger
 trigger = DigitalInOut(board.A3)
