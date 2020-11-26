@@ -3,7 +3,7 @@ import time
 from hardware import measure_acceleration, is_trigger_down, pixels
 from state import State, StateMachine
 from spell import select_spell, SpellState, age_spells
-from sound import play_cast
+from sound import play_cast, play_weaved, play_active, sound_off, volume, sound_cleanup
 from lights import draw_casting, draw_spell, draw_weaved, PixelEdge
 
 # Spell States
@@ -162,16 +162,17 @@ class Weaved(State):
         self.ellapsed_total = 0
         gs.weaved_spell = gs.active_spell_states[0]
         gs.weaved_progress = 0
-
+        play_weaved()
         print(
             "Weaved: {} at power {}".format(gs.weaved_spell.name, gs.weaved_spell.power)
         )
 
     def update(self, ellapsed_time):
         self.ellapsed_total += ellapsed_time
-        gs.weaved_progress = min(self.ellapsed_total / 0.5, 1)
+        gs.weaved_progress = min(self.ellapsed_total / 1, 1)
         if gs.weaved_progress == 1:
             gs.weaved_spell = None
+            play_active()
             return "Idle"
         return self.name
 
@@ -190,6 +191,8 @@ def read_hardware():
 left_edge = PixelEdge(pixels, range(0, 7))
 right_edge = PixelEdge(pixels, range(13, 7, -1))
 
+volume(0.1)
+
 while True:
     current_time = time.monotonic()
     ellapsed_time = current_time - last_update_time
@@ -199,6 +202,7 @@ while True:
 
     state_machine.update(ellapsed_time)
 
+    spell_was_active = len(gs.active_spell_states)
     gs.active_spell_states = age_spells(gs.active_spell_states, ellapsed_time)
 
     if gs.casting_spell:
@@ -211,10 +215,14 @@ while True:
         active_spell = gs.active_spell_states[0]
         draw_spell(active_spell, left_edge, ellapsed_time)
         draw_spell(active_spell, right_edge, ellapsed_time)
-    else:
+    else:        
+        if spell_was_active:
+            sound_off()
         pixels.fill((0, 0, 0))
 
     pixels.show()
+
+    sound_cleanup()
 
     if ellapsed_time < 0.05:
         time.sleep(0.05 - ellapsed_time)
