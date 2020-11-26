@@ -18,7 +18,7 @@ else:
     i2c = busio.I2C(board.SCL, board.SDA)
     int1 = DigitalInOut(board.D6)  # Set to correct pin for interrupt!
     lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c, int1=int1)
-lis3dh.range = adafruit_lis3dh.RANGE_2_G
+lis3dh.range = adafruit_lis3dh.RANGE_4_G
 
 
 # LEDs
