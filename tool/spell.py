@@ -16,7 +16,7 @@ class Spell(object):
         r = color[0] * power
         g = color[1] * power
         b = color[2] * power
-        for i in range(pixels.n):
+        for i in range(len(pixels)):
             twinkle = random.uniform(0.5, 1.5)
             pixels[i] = (
                 min(int(r * twinkle), 255),

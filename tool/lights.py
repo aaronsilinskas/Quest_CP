@@ -1,38 +1,42 @@
+class PixelEdge(object):
+    def __init__(self, pixel_buf, indexes):
+        self.pixel_buf = pixel_buf
+        self.indexes = list(indexes)
+        print(self.indexes)
+        
+    def __len__(self):
+        return len(self.indexes)
 
-def map_pixel(pixels, row, col):
-    if (row < 0) or (row >= pixels.n / 2):
-        return None
-    if col == 0:
-        return row
-    return pixels.n - row - 1
+    def __setitem__(self, index, val):
+        self.pixel_buf[self.indexes[index]] = val
+    
+    def __getitem__(self, index):
+        print(index)
+        print(self.indexes[index])
+        return self.pixel_buf[self.indexes[index]]
 
 
-def apply_brighten(pixels, row, col, offset):
-    i = map_pixel(pixels, row, col)
-    if i is None:
+def apply_brighten(pixels, index, offset):    
+    if (index < 0) or (index >= len(pixels)):
         return
-    pixel = pixels[i]
+    pixel = pixels[index]
     brighten = int(192 / offset)
     r = min(pixel[0] + brighten, 255)
     g = min(pixel[1] + brighten, 255)
     b = min(pixel[2] + brighten, 255)
-    pixels[i] = (r, g, b)
+    pixels[index] = (r, g, b)
 
 
 def draw_casting(spell_state, pixels, ellapsed_time, progress):
     draw_spell(spell_state, pixels, ellapsed_time)
     # TODO hardcoded for prototype, replace with pixel map
-    pix_per_side = pixels.n / 2
-    brightener_pos = int(pix_per_side * progress) + 2
-    for row in range(brightener_pos - 4, brightener_pos):
-        for col in range(0, 2):
-            apply_brighten(pixels, row, col, brightener_pos - row + 1)
+    brightener_pos = int(len(pixels) * progress) + 2
+    for index in range(brightener_pos - 4, brightener_pos):
+        apply_brighten(pixels, index, brightener_pos - index + 1)
     darkener_pos = brightener_pos - 5
-    for row in range(darkener_pos, -1, -1):
-        for col in range(0, 2):
-            i = map_pixel(pixels, row, col)
-            if i is not None:
-                pixels[i] = (0, 0, 0)
+    for index in range(darkener_pos, -1, -1):
+        if (index >= 0) and (index < len(pixels)):
+            pixels[index] = (0, 0, 0)
 
 def draw_weaved(spell, pixels, ellapsed_time, progress):
     # TODO make amazing initial spell animation
