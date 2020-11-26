@@ -23,7 +23,7 @@ lis3dh.range = adafruit_lis3dh.RANGE_2_G
 
 # LEDs
 pixels = adafruit_dotstar.DotStar(
-    board.A2, board.A1, 14, brightness=0.05, auto_write=False
+    board.A3, board.A1, 14, brightness=0.05, auto_write=False
 )
 
 # Audio
@@ -37,7 +37,7 @@ else:
     audio = AudioOut(board.A0)
 
 # Trigger
-trigger = DigitalInOut(board.A3)
+trigger = DigitalInOut(board.A2)
 trigger.direction = Direction.INPUT
 trigger.pull = Pull.UP
 

@@ -81,17 +81,80 @@ class WindSpell(Spell):
 spells = [LightSpell(), FireSpell(), WaterSpell(), EarthSpell(), WindSpell()]
 
 
+def map_vert(acceleration):
+    x = acceleration[0]
+    if x > 0.75:
+        return "down"
+    if x > 0.25:
+        return "low"
+    if x > -0.25:
+        return "middle"
+    if x > -0.75:
+        return "high"
+    return "up"
+
+
+def map_horz(acceleration):
+    y = acceleration[1]
+    if abs(y) < 0.25:
+        return "flat"
+    if abs(y) < 0.75:
+        return "angle"
+    return "edge"
+
+
 def select_spell(initial_acceleration, current_acceleration):
     # x = pointing up or down. Up = -1, Down = 1
     # z, y = rotation. Flat = abs(z)=1, y=0. On edge = abs(z)=0,abs(y)=1
-    vert_dir = current_acceleration[0]
-    if vert_dir < -0.75:
+    # vert: Up = -1, Down = 1
+    # Horz: Flat = 0, Edge = 1, -1
+    initial_vert = map_vert(initial_acceleration)
+    initial_horz = map_horz(initial_acceleration)
+    current_vert = map_vert(current_acceleration)
+    current_horz = map_horz(current_acceleration)
+
+    print(
+        "Initial: {} {} -> Current {} {}".format(
+            initial_vert, initial_horz, current_vert, current_horz
+        )
+    )
+
+    if (initial_vert == "up"
+        and current_vert == "up"):
         return LightSpell()
-    elif vert_dir < -0.25:
-        return WindSpell()
-    elif vert_dir < 0.25:
+
+    if (
+        initial_vert == "middle"
+        and current_vert == "middle"
+        and initial_horz == "flat"
+        and current_horz == "edge"
+    ):
         return FireSpell()
-    elif vert_dir < 0.75:
+
+    if (initial_vert == "up"
+        and current_vert == "middle"
+        and current_horz == "flat"):
+        return WindSpell()
+
+    if (initial_vert == "down"
+        and current_vert == "middle"
+        and current_horz == "flat"):
         return WaterSpell()
 
-    return EarthSpell()
+    if (initial_vert == "down"
+        and current_vert == "middle"
+        and current_horz == "edge"):
+        return EarthSpell()
+
+    return None
+
+    # return EarthSpell()
+
+
+def age_spells(spell_states, ellapsed_time):
+    for spell in spell_states:
+        spell.lifespan = max(spell.lifespan - ellapsed_time, 0)
+        if spell.lifespan <= 1:
+            spell.power = max(spell.max_power * spell.lifespan, 0)
+
+    return [spell for spell in spell_states if spell.lifespan > 0]
