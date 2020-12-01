@@ -1,6 +1,6 @@
 import random
 
-# Spell
+
 class Spell(object):
     def __init__(self):
         pass
@@ -119,8 +119,7 @@ def select_spell(initial_acceleration, current_acceleration):
         )
     )
 
-    if (initial_vert == "up"
-        and current_vert == "up"):
+    if initial_vert == "up" and current_vert == "up":
         return LightSpell()
 
     if (
@@ -131,24 +130,16 @@ def select_spell(initial_acceleration, current_acceleration):
     ):
         return FireSpell()
 
-    if (initial_vert == "up"
-        and current_vert == "middle"
-        and current_horz == "flat"):
+    if initial_vert == "up" and current_vert == "middle" and current_horz == "flat":
         return WindSpell()
 
-    if (initial_vert == "down"
-        and current_vert == "middle"
-        and current_horz == "flat"):
+    if initial_vert == "down" and current_vert == "middle" and current_horz == "flat":
         return WaterSpell()
 
-    if (initial_vert == "down"
-        and current_vert == "middle"
-        and current_horz == "edge"):
+    if initial_vert == "down" and current_vert == "middle" and current_horz == "edge":
         return EarthSpell()
 
     return None
-
-    # return EarthSpell()
 
 
 def age_spells(spell_states, ellapsed_time):
