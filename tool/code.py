@@ -1,9 +1,8 @@
-import time
-
-from hardware import measure_acceleration, is_trigger_down, pixels
+import board
+from hardware import Hardware
+from sound import Sound
 from state import State, StateMachine
 from spell import select_spell, SpellState, age_spells
-from sound import play_cast, play_weaved, play_active, sound_off, volume, sound_cleanup
 from lights import draw_casting, draw_spell, draw_weaved, PixelEdge
 
 # Spell States
@@ -24,21 +23,40 @@ from lights import draw_casting, draw_spell, draw_weaved, PixelEdge
 # Weaved (a spell was weaved, activate it)
 # - if done activating -> Idle
 
+hw = Hardware(board.A2, ir_pin=board.TX)
+hw.setup_pixels_dotstar(board.A3, board.A1, 14, 0.2)
+
+left_edge = PixelEdge(hw.pixels, range(0, 7))
+right_edge = PixelEdge(hw.pixels, range(13, 7, -1))
+
+sound = Sound(hw.audio)
+sound.volume(0.5)
+
 # == Global Functions ==
+def play_cast():
+    sound.play_file("hit.wav")
+
+
+def play_weaved():
+    sound.play_file("on.wav")
+
+
+def play_active():
+    sound.play_file("idle.wav", loop=True)
+
+
 def print_xyz(name, measurement):
     x, y, z = measurement
     print("(%0.3f,%0.3f,%0.3f) %s" % (x, y, z, name))
 
 
-def diff_xyz(initial, current):
-    return list(map(lambda x, y: x - y, initial, current))
+def diff_iterable(it1, it2):
+    return list(map(lambda v1, v2: v1 - v2, it1, it2))
 
 
 # == States ==
 class GlobalState:
-    trigger_down = False
     initial_acceleration = [None, None, None]
-    current_acceleration = [None, None, None]
     active_spell_states = []
     casting_spell = None
     casting_progress = 0
@@ -53,7 +71,7 @@ state_machine = StateMachine()
 
 class Idle(State):
     def update(self, ellapsed_time):
-        if gs.trigger_down:
+        if hw.trigger_down:
             return "Triggered"
         return self.name
 
@@ -66,15 +84,15 @@ class Triggered(State):
         State.enter(self)
         self.time_remaining = 0.5
 
-        gs.initial_acceleration = measure_acceleration()
+        gs.initial_acceleration = hw.current_acceleration
 
     def update(self, ellapsed_time):
-        if (not gs.trigger_down) and (len(gs.active_spell_states) > 0):
+        if (not hw.trigger_down) and (len(gs.active_spell_states) > 0):
             return "Casting"
 
         self.time_remaining -= ellapsed_time
         if self.time_remaining <= 0:
-            if not gs.trigger_down:
+            if not hw.trigger_down:
                 return "Idle"
             else:
                 return "Weaving"
@@ -126,24 +144,24 @@ class Weaving(State):
         # print_xyz("Current acceleration", gs.current_acceleration)
 
         self.min_acceleration = list(
-            map(min, gs.current_acceleration, self.min_acceleration)
+            map(min, hw.current_acceleration, self.min_acceleration)
         )
         self.max_acceleration = list(
-            map(max, gs.current_acceleration, self.max_acceleration)
+            map(max, hw.current_acceleration, self.max_acceleration)
         )
         # print_xyz("Min", self.min_acceleration)
         # print_xyz("Max", self.max_acceleration)
 
-        if not gs.trigger_down:
+        if not hw.trigger_down:
             print("Trigger Up!")
             print_xyz("Initial", gs.initial_acceleration)
             print_xyz("Min", self.min_acceleration)
             print_xyz("Max", self.max_acceleration)
 
-            diffMax = diff_xyz(gs.initial_acceleration, self.max_acceleration)
+            diffMax = diff_iterable(gs.initial_acceleration, self.max_acceleration)
             print_xyz("DiffMax", diffMax)
 
-            spell = select_spell(gs.initial_acceleration, gs.current_acceleration)
+            spell = select_spell(gs.initial_acceleration, hw.current_acceleration)
             if spell is None:
                 return "Idle"
 
@@ -181,24 +199,11 @@ state_machine.add_state(Weaved())
 
 
 state_machine.go_to_state("Idle")
-last_update_time = time.monotonic()
-
-
-def read_hardware():
-    gs.trigger_down = is_trigger_down()
-    gs.current_acceleration = measure_acceleration()
-
-left_edge = PixelEdge(pixels, range(0, 7))
-right_edge = PixelEdge(pixels, range(13, 7, -1))
-
-volume(0.5)
 
 while True:
-    current_time = time.monotonic()
-    ellapsed_time = current_time - last_update_time
-    last_update_time = time.monotonic()
+    hw.update()
 
-    read_hardware()
+    ellapsed_time = hw.ellapsed_time
 
     state_machine.update(ellapsed_time)
 
@@ -215,14 +220,11 @@ while True:
         active_spell = gs.active_spell_states[0]
         draw_spell(active_spell, left_edge, ellapsed_time)
         draw_spell(active_spell, right_edge, ellapsed_time)
-    else:        
+    else:
         if spell_was_active:
-            sound_off()
-        pixels.fill((0, 0, 0))
+            sound.off()
+        hw.pixels.fill((0, 0, 0))
 
-    pixels.show()
+    hw.pixels.show()
 
-    sound_cleanup()
-
-    if ellapsed_time < 0.05:
-        time.sleep(0.05 - ellapsed_time)
+    sound.cleanup()

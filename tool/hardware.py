@@ -1,58 +1,131 @@
 import board
 from digitalio import DigitalInOut, Direction, Pull
+import time
 import busio
+import pulseio
 import adafruit_lis3dh
 import adafruit_dotstar
+
 try:
     from audioio import AudioOut
 except ImportError:
     from audiopwmio import PWMAudioOut as AudioOut
 
-def digital_in(pin, pull = Pull.DOWN):
+
+def digital_in(pin, pull=Pull.DOWN):
     input = DigitalInOut(pin)
     input.direction = Direction.INPUT
     input.pull = pull
     return input
 
-def digital_out(pin, value = False):
+
+def digital_out(pin, value=False):
     output = DigitalInOut(pin)
     output.direction = Direction.OUTPUT
     output.value = value
     return output
 
-# Use the CircuitPlayground built-in accelerometer if available,
-# otherwise check I2C pins.
-if hasattr(board, "ACCELEROMETER_SCL"):
-    i2c = busio.I2C(board.ACCELEROMETER_SCL, board.ACCELEROMETER_SDA)
-    int1 = DigitalInOut(board.ACCELEROMETER_INTERRUPT)
-    lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c, address=0x19, int1=int1)
-else:
-    i2c = busio.I2C(board.SCL, board.SDA)
-    int1 = DigitalInOut(board.D6)  # Set to correct pin for interrupt!
-    lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c, int1=int1)
-lis3dh.range = adafruit_lis3dh.RANGE_4_G
 
+class Hardware(object):
+    def __init__(
+        self, trigger_pin, accelerometer_pin=None, audio_pin=None, ir_pin=None
+    ):
+        self._trigger = digital_in(trigger_pin, Pull.UP)
 
-# LEDs
-pixels = adafruit_dotstar.DotStar(
-    board.A3, board.A1, 14, brightness=0.2, auto_write=False
-)
+        if accelerometer_pin is not None:
+            i2c = busio.I2C(board.SCL, board.SDA)
+            int1 = DigitalInOut(accelerometer_pin)
+            self._accelerometer = adafruit_lis3dh.LIS3DH_I2C(i2c, int1=int1)
+        elif hasattr(board, "ACCELEROMETER_SCL"):
+            i2c = busio.I2C(board.ACCELEROMETER_SCL, board.ACCELEROMETER_SDA)
+            int1 = DigitalInOut(board.ACCELEROMETER_INTERRUPT)
+            self._accelerometer = adafruit_lis3dh.LIS3DH_I2C(
+                i2c, address=0x19, int1=int1
+            )
+        else:
+            self._accelerometer = None
+        if self._accelerometer is not None:
+            self._accelerometer.range = adafruit_lis3dh.RANGE_4_G
 
-# Audio
-if hasattr(board, "SPEAKER"):
-    speaker_enable = digital_out(board.SPEAKER_ENABLE, True)
+        if audio_pin is not None:
+            self._audio = AudioOut(audio_pin)
+        elif hasattr(board, "SPEAKER"):
+            digital_out(board.SPEAKER_ENABLE, True)
+            self._audio = AudioOut(board.SPEAKER)
+        else:
+            self._audio = None
 
-    audio = AudioOut(board.SPEAKER)
-else:
-    audio = AudioOut(board.A0)
+        if ir_pin is not None:
+            ir_pwm = pulseio.PWMOut(ir_pin, frequency=38000, duty_cycle=2 ** 15)
+            self._ir_pulseout = pulseio.PulseOut(ir_pwm)
 
-# Trigger
-trigger = digital_in(board.A2, Pull.UP)
+        self._pixels = None
+        self._last_update_time = time.monotonic()
 
+        if hasattr(board, "BUTTON_A"):
+            self._button_a = digital_in(board.BUTTON_A)
+        if hasattr(board, "BUTTON_B"):
+            self._button_b = digital_in(board.BUTTON_B)
+        if hasattr(board, "SLIDE_SWITCH"):
+            self._switch = digital_in(board.SLIDE_SWITCH, Pull.UP)
 
-def measure_acceleration():
-    return [value / adafruit_lis3dh.STANDARD_GRAVITY for value in lis3dh.acceleration]
+    def setup_pixels_dotstar(self, clock, data, count, brightness):
+        self._pixels = adafruit_dotstar.DotStar(
+            board.A3, board.A1, 14, brightness=brightness, auto_write=False
+        )
 
+    def update(self):
+        self._trigger_down = self._trigger.value is False
 
-def is_trigger_down():
-    return trigger.value == 0
+        if self._accelerometer is not None:
+            self._current_acceleration = [
+                value / adafruit_lis3dh.STANDARD_GRAVITY
+                for value in self._accelerometer.acceleration
+            ]
+
+        if self._button_a is not None:
+            self._button_a_down = self._button_a.value is True
+        if self._button_b is not None:
+            self._button_b_down = self._button_b.value is True
+        if self._switch is not None:
+            self._switch_on = self._switch.value is False
+
+        current_time = time.monotonic()
+        self._ellapsed_time = current_time - self._last_update_time
+        self._last_update_time = time.monotonic()
+
+    @property
+    def ellapsed_time(self):
+        return self._ellapsed_time
+
+    @property
+    def trigger_down(self):
+        return self._trigger_down
+
+    @property
+    def pixels(self):
+        return self._pixels
+
+    @property
+    def current_acceleration(self):
+        return self._current_acceleration
+
+    @property
+    def audio(self):
+        return self._audio
+
+    @property
+    def ir_pulseout(self):
+        return self._ir_pulseout
+
+    @property
+    def button_a_down(self):
+        return self._button_a_down
+
+    @property
+    def button_b_down(self):
+        return self._button_b_down
+
+    @property
+    def switch_on(self):
+        return self._switch_on
