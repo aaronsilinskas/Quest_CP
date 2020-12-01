@@ -8,6 +8,18 @@ try:
 except ImportError:
     from audiopwmio import PWMAudioOut as AudioOut
 
+def digital_in(pin, pull = Pull.DOWN):
+    input = DigitalInOut(pin)
+    input.direction = Direction.INPUT
+    input.pull = pull
+    return input
+
+def digital_out(pin, value = False):
+    output = DigitalInOut(pin)
+    output.direction = Direction.OUTPUT
+    output.value = value
+    return output
+
 # Use the CircuitPlayground built-in accelerometer if available,
 # otherwise check I2C pins.
 if hasattr(board, "ACCELEROMETER_SCL"):
@@ -23,23 +35,19 @@ lis3dh.range = adafruit_lis3dh.RANGE_4_G
 
 # LEDs
 pixels = adafruit_dotstar.DotStar(
-    board.A3, board.A1, 14, brightness=0.05, auto_write=False
+    board.A3, board.A1, 14, brightness=0.2, auto_write=False
 )
 
 # Audio
 if hasattr(board, "SPEAKER"):
-    speaker_enable = DigitalInOut(board.SPEAKER_ENABLE)
-    speaker_enable.direction = Direction.OUTPUT
-    speaker_enable.value = True
+    speaker_enable = digital_out(board.SPEAKER_ENABLE, True)
 
     audio = AudioOut(board.SPEAKER)
 else:
     audio = AudioOut(board.A0)
 
 # Trigger
-trigger = DigitalInOut(board.A2)
-trigger.direction = Direction.INPUT
-trigger.pull = Pull.UP
+trigger = digital_in(board.A2, Pull.UP)
 
 
 def measure_acceleration():

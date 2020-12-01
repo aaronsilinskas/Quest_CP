@@ -191,7 +191,7 @@ def read_hardware():
 left_edge = PixelEdge(pixels, range(0, 7))
 right_edge = PixelEdge(pixels, range(13, 7, -1))
 
-volume(0.1)
+volume(0.5)
 
 while True:
     current_time = time.monotonic()
