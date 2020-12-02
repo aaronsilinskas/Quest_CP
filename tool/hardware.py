@@ -2,6 +2,7 @@ import board
 from digitalio import DigitalInOut, Direction, Pull
 import time
 import busio
+import pwmio
 import pulseio
 import adafruit_lis3dh
 import adafruit_dotstar
@@ -36,12 +37,14 @@ class Hardware(object):
             i2c = busio.I2C(board.SCL, board.SDA)
             int1 = DigitalInOut(accelerometer_pin)
             self._accelerometer = adafruit_lis3dh.LIS3DH_I2C(i2c, int1=int1)
+            print("Accelerometer: ", accelerometer_pin)
         elif hasattr(board, "ACCELEROMETER_SCL"):
             i2c = busio.I2C(board.ACCELEROMETER_SCL, board.ACCELEROMETER_SDA)
             int1 = DigitalInOut(board.ACCELEROMETER_INTERRUPT)
             self._accelerometer = adafruit_lis3dh.LIS3DH_I2C(
                 i2c, address=0x19, int1=int1
             )
+            print("Accelerometer: internal")
         else:
             self._accelerometer = None
         if self._accelerometer is not None:
@@ -49,6 +52,7 @@ class Hardware(object):
 
         if audio_pin is not None:
             self._audio = AudioOut(audio_pin)
+            print("Audio: ", audio_pin)
         elif hasattr(board, "SPEAKER"):
             digital_out(board.SPEAKER_ENABLE, True)
             self._audio = AudioOut(board.SPEAKER)
@@ -56,8 +60,9 @@ class Hardware(object):
             self._audio = None
 
         if ir_pin is not None:
-            ir_pwm = pulseio.PWMOut(ir_pin, frequency=38000, duty_cycle=2 ** 15)
-            self._ir_pulseout = pulseio.PulseOut(ir_pwm)
+            self._ir_pwm = pwmio.PWMOut(ir_pin, frequency=38000, duty_cycle=2 ** 15)
+            self._ir_pulseout = pulseio.PulseOut(self._ir_pwm)
+            print("IR Transmit: ", ir_pin)
 
         self._pixels = None
         self._last_update_time = time.monotonic()
