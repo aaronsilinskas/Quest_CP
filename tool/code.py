@@ -1,4 +1,5 @@
 import board
+import time
 from hardware import Hardware
 from sound import Sound
 from state import State, StateMachine
@@ -233,5 +234,6 @@ while True:
 
     if hw.button_a_down:
         infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])
+        time.sleep(0.5)
 
     sound.cleanup()
