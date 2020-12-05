@@ -14,8 +14,9 @@ IR_CRC_GENERATOR = 0x1D
 
 
 class Infrared(object):
-    def __init__(self, ir_pulseout):
+    def __init__(self, ir_pulseout, ir_pulsein):
         self._ir_pulseout = ir_pulseout
+        self._ir_pulsein = ir_pulsein
 
     def send(self, data):
         print("Sending: ", data)
@@ -37,6 +38,15 @@ class Infrared(object):
         print("Durations: ", durations)
         self._ir_pulseout.send(durations)
         print("Sent")
+
+    def receive(self):
+        pulses = list()
+        while len(self._ir_pulsein) > 0:
+            pulse = self._ir_pulsein.popleft()
+            pulses.append(pulse)
+
+        self._ir_pulsein.clear()
+        return pulses
 
     def _encode_byte(self, durations, duration_index, value):
         for i in range(8):

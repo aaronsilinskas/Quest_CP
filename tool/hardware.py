@@ -29,7 +29,13 @@ def digital_out(pin, value=False):
 
 class Hardware(object):
     def __init__(
-        self, trigger_pin, accelerometer_pin=None, audio_pin=None, ir_pin=None
+        self,
+        trigger_pin,
+        accelerometer_pin=None,
+        audio_pin=None,
+        ir_out_pin=None,
+        ir_in_pin=None,
+        ir_in_max_pulses=256,
     ):
         self._trigger = digital_in(trigger_pin, Pull.UP)
 
@@ -59,10 +65,18 @@ class Hardware(object):
         else:
             self._audio = None
 
-        if ir_pin is not None:
-            self._ir_pwm = pwmio.PWMOut(ir_pin, frequency=38000, duty_cycle=2 ** 15)
-            self._ir_pulseout = pulseio.PulseOut(self._ir_pwm)
-            print("IR Transmit: ", ir_pin)
+        if ir_out_pin is not None:
+            self._ir_pwmout = pwmio.PWMOut(
+                ir_out_pin, frequency=38000, duty_cycle=2 ** 15
+            )
+            self._ir_pulseout = pulseio.PulseOut(self._ir_pwmout)
+            print("Infrared Output: ", ir_out_pin)
+        if ir_in_pin is not None:
+            self._ir_pulsein = pulseio.PulseIn(
+                ir_in_pin, maxlen=ir_in_max_pulses, idle_state=True
+            )
+            print("Infrared Input: ", ir_in_pin)
+            print("Infrared Max Pulses: ", ir_in_max_pulses)
 
         self._pixels = None
         self._last_update_time = time.monotonic()
@@ -122,6 +136,10 @@ class Hardware(object):
     @property
     def ir_pulseout(self):
         return self._ir_pulseout
+
+    @property
+    def ir_pulsein(self):
+        return self._ir_pulsein
 
     @property
     def button_a_down(self):

@@ -26,7 +26,7 @@ from infrared import Infrared
 # Weaved (a spell was weaved, activate it)
 # - if done activating -> Idle
 
-hw = Hardware(board.A2, ir_pin=board.D1)
+hw = Hardware(board.A2, ir_out_pin=board.D1, ir_in_pin=board.D0)
 hw.setup_pixels_dotstar(board.A3, board.A1, 14, 0.2)
 
 left_edge = PixelEdge(hw.pixels, range(0, 7))
@@ -35,7 +35,7 @@ right_edge = PixelEdge(hw.pixels, range(13, 7, -1))
 sound = Sound(hw.audio)
 sound.volume(0.5)
 
-infrared = Infrared(hw.ir_pulseout)
+infrared = Infrared(hw.ir_pulseout, hw.ir_pulsein)
 
 # == Global Functions ==
 def play_cast():
@@ -235,5 +235,9 @@ while True:
     if hw.button_a_down:
         infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])
         time.sleep(0.5)
+
+    pulses = infrared.receive()
+    if len(pulses) > 0:
+        print("IR Pulses: ", pulses)
 
     sound.cleanup()
