@@ -237,7 +237,7 @@ while True:
         time.sleep(0.5)
 
     pulses = infrared.receive()
-    if len(pulses) > 0:
+    if pulses is not None:
         print("IR Pulses: ", pulses)
 
     sound.cleanup()
