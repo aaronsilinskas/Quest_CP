@@ -75,8 +75,6 @@ class IRDecoder(object):
     def __init__(self):
         self._received_headers = 0
         self._received_data = bytearray()
-        self._received_byte = 0
-        self._received_bit_index = 0
 
     def decode(self, pulse):
         # print("Pulse: ", pulse)
@@ -89,8 +87,7 @@ class IRDecoder(object):
             if self._check_pulse(pulse, IR_HEADER_SPACE):
                 self._received_headers = 2
                 self._received_data = bytearray()
-                self._received_byte = 0
-                self._received_bit_index = 7
+                self._reset_bits()
             else:
                 self._received_headers = 0
         elif self._received_headers is 2:
@@ -112,6 +109,10 @@ class IRDecoder(object):
                 # unknown pulse, packet is corrupt so reset
                 self._received_headers = 0
 
+    def _reset_bits(self):
+        self._received_byte = 0
+        self._received_bit_index = 7
+
     def _check_pulse(self, received, expected):
         return abs(received - expected) < IR_ERROR_MARGIN
 
@@ -122,7 +123,5 @@ class IRDecoder(object):
         if self._received_bit_index < 0:
             # print("Received Byte: ", bin(self._received_byte))
             self._received_data.append(self._received_byte)
-
-            self._received_bit_index = 7
-            self._received_byte = 0
+            self._reset_bits()
         # print("Bit Update: ", bin(self._received_byte), self._received_bit_index)
