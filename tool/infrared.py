@@ -97,9 +97,10 @@ class IRDecoder(object):
                 received_crc = self._received_data[-1]
                 received_data = self._received_data[: len(self._received_data) - 1]
                 calculated_crc = _calculate_crc(received_data)
+                pulse_error_margin = self._max_error_margin
                 self._reset_decode()
                 if received_crc is calculated_crc:
-                    return received_data
+                    return received_data, pulse_error_margin
                 else:
                     print("CRC mismatch: ", bin(received_crc), bin(calculated_crc))
             else:
@@ -108,6 +109,7 @@ class IRDecoder(object):
 
     def _reset_decode(self):
         self._received_headers = 0
+        self._max_error_margin = 0
         self._received_data = None
 
     def _reset_data(self):
@@ -119,7 +121,11 @@ class IRDecoder(object):
         self._received_bit_index = 7
 
     def _check_pulse(self, received, expected):
-        return abs(received - expected) < IR_ERROR_MARGIN
+        margin = abs(received - expected)
+        match = margin < IR_ERROR_MARGIN
+        if match:
+            self._max_error_margin = max(self._max_error_margin, margin)
+        return match
 
     def _write_bit(self, bit):
         if bit is 1:
