@@ -73,8 +73,7 @@ class Infrared(object):
 
 class IRDecoder(object):
     def __init__(self):
-        self._received_headers = 0
-        self._received_data = bytearray()
+        self._reset_decode()
 
     def decode(self, pulse):
         # print("Pulse: ", pulse)
@@ -86,28 +85,34 @@ class IRDecoder(object):
         elif self._received_headers is 1:
             if self._check_pulse(pulse, IR_HEADER_SPACE):
                 self._received_headers = 2
-                self._received_data = bytearray()
-                self._reset_bits()
+                self._reset_data()
             else:
-                self._received_headers = 0
+                self._reset_decode()
         elif self._received_headers is 2:
             if self._check_pulse(pulse, IR_ONE):
                 self._write_bit(1)
             elif self._check_pulse(pulse, IR_ZERO):
                 self._write_bit(0)
             elif self._check_pulse(pulse, IR_LEAD_OUT):
-                self._received_headers = 0
                 received_crc = self._received_data[-1]
-                received_data = self._received_data[:len(self._received_data)-1]
+                received_data = self._received_data[: len(self._received_data) - 1]
                 calculated_crc = _calculate_crc(received_data)
-                self._received_data = bytearray()
+                self._reset_decode()
                 if received_crc is calculated_crc:
                     return received_data
                 else:
                     print("CRC mismatch: ", bin(received_crc), bin(calculated_crc))
             else:
                 # unknown pulse, packet is corrupt so reset
-                self._received_headers = 0
+                self._reset_decode()
+
+    def _reset_decode(self):
+        self._received_headers = 0
+        self._received_data = None
+
+    def _reset_data(self):
+        self._received_data = bytearray()
+        self._reset_bits()
 
     def _reset_bits(self):
         self._received_byte = 0
