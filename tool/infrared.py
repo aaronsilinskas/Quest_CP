@@ -1,4 +1,5 @@
 import array
+import time
 
 IR_UNIT = 500
 IR_ERROR_MARGIN = IR_UNIT / 2
@@ -32,6 +33,8 @@ class Infrared(object):
         self._decoder = IRDecoder()
 
     def send(self, data):
+        self._wait_for_traffic()
+
         print("Sending: ", data)
         # length = header + (data * 8 bits per byte) + crc bits + lead out
         durations = array.array("H", [0] * (2 + len(data) * 8 + 8 + 1))
@@ -51,6 +54,15 @@ class Infrared(object):
         print("Durations: ", durations)
         self._ir_pulseout.send(durations)
         print("Sent")
+
+    def _wait_for_traffic(self):
+        while True:
+            last_len = len(self._ir_pulsein)
+            time.sleep(IR_HEADER_MARK / 38000)
+            if last_len == len(self._ir_pulsein):
+                break
+            else:
+                print("Waiting in IR traffic ", last_len)
 
     def receive(self):
         if len(self._ir_pulsein) == 0:
