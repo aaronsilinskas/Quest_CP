@@ -94,7 +94,7 @@ class Hardware(object):
         )
 
     def update(self):
-        self._trigger_down = self._trigger.value is False
+        self._trigger_down = self._trigger.value == 0
 
         if self._accelerometer is not None:
             self._current_acceleration = [
@@ -103,11 +103,11 @@ class Hardware(object):
             ]
 
         if self._button_a is not None:
-            self._button_a_down = self._button_a.value is True
+            self._button_a_down = self._button_a.value == 1
         if self._button_b is not None:
-            self._button_b_down = self._button_b.value is True
+            self._button_b_down = self._button_b.value == 1
         if self._switch is not None:
-            self._switch_on = self._switch.value is False
+            self._switch_on = self._switch.value == 0
 
         current_time = time.monotonic()
         self._ellapsed_time = current_time - self._last_update_time

@@ -18,7 +18,7 @@ def _calculate_crc(data):
     for data_byte in data:
         crc ^= data_byte
         for j in range(8):
-            if crc & 0x80 is not 0:
+            if crc & 0x80 != 0:
                 crc = ((crc << 1) & 0xFF) ^ IR_CRC_GENERATOR
             else:
                 crc = (crc << 1) & 0xFF
@@ -53,7 +53,7 @@ class Infrared(object):
         print("Sent")
 
     def receive(self):
-        if len(self._ir_pulsein) is 0:
+        if len(self._ir_pulsein) == 0:
             return
 
         while len(self._ir_pulsein) > 0:
@@ -79,16 +79,16 @@ class IRDecoder(object):
         # print("Pulse: ", pulse)
 
         # discard pulses until we get the first header pulse
-        if self._received_headers is 0:
+        if self._received_headers == 0:
             if self._check_pulse(pulse, IR_HEADER_MARK):
                 self._received_headers = 1
-        elif self._received_headers is 1:
+        elif self._received_headers == 1:
             if self._check_pulse(pulse, IR_HEADER_SPACE):
                 self._received_headers = 2
                 self._reset_data()
             else:
                 self._reset_decode()
-        elif self._received_headers is 2:
+        elif self._received_headers == 2:
             if self._check_pulse(pulse, IR_ONE):
                 self._write_bit(1)
             elif self._check_pulse(pulse, IR_ZERO):
@@ -99,7 +99,7 @@ class IRDecoder(object):
                 calculated_crc = _calculate_crc(received_data)
                 pulse_error_margin = self._max_error_margin
                 self._reset_decode()
-                if received_crc is calculated_crc:
+                if received_crc == calculated_crc:
                     return received_data, pulse_error_margin
                 else:
                     print("CRC mismatch: ", bin(received_crc), bin(calculated_crc))
@@ -128,7 +128,7 @@ class IRDecoder(object):
         return match
 
     def _write_bit(self, bit):
-        if bit is 1:
+        if bit == 1:
             self._received_byte |= 1 << self._received_bit_index
         self._received_bit_index -= 1
         if self._received_bit_index < 0:
