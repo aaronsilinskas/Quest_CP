@@ -1,6 +1,3 @@
-import random
-
-
 class Spell(object):
     def __init__(self):
         self._name = type(self).__name__[: -len("Spell")]
@@ -20,45 +17,25 @@ class Spell(object):
         self._power = power
         self.max_power = max(self._power, power)
 
-    def draw(self, pixels, ellapsed):
-        pass
-
-    def draw_simple(self, pixels, color, power):
-        r = color[0] * power
-        g = color[1] * power
-        b = color[2] * power
-        for i in range(len(pixels)):
-            twinkle = random.uniform(0.5, 1.5)
-            pixels[i] = (
-                min(int(r * twinkle), 255),
-                min(int(g * twinkle), 255),
-                min(int(b * twinkle), 255),
-            )
-
 
 class LightSpell(Spell):
-    def draw(self, pixels, ellapsed):
-        self.draw_simple(pixels, (255, 255, 255), self.power)
+    pass
 
 
 class FireSpell(Spell):
-    def draw(self, pixels, ellapsed):
-        self.draw_simple(pixels, (255, 0, 0), self.power)
+    pass
 
 
 class WaterSpell(Spell):
-    def draw(self, pixels, ellapsed):
-        self.draw_simple(pixels, (0, 64, 255), self.power)
+    pass
 
 
 class EarthSpell(Spell):
-    def draw(self, pixels, ellapsed):
-        self.draw_simple(pixels, (210, 105, 30), self.power)
+    pass
 
 
 class WindSpell(Spell):
-    def draw(self, pixels, ellapsed):
-        self.draw_simple(pixels, (255, 0, 255), self.power)
+    pass
 
 
 VERT_DOWN = 1

@@ -1,3 +1,14 @@
+import random
+
+SPELL_COLORS = {
+    "Light": (255, 255, 255),
+    "Fire": (255, 0, 0),
+    "Water": (0, 64, 255),
+    "Earth": (210, 105, 30),
+    "Wind": (255, 0, 255),
+}
+
+
 class PixelEdge(object):
     def __init__(self, pixel_buf, indexes):
         self.pixel_buf = pixel_buf
@@ -11,6 +22,19 @@ class PixelEdge(object):
 
     def __getitem__(self, index):
         return self.pixel_buf[self.indexes[index]]
+
+
+def draw_simple(pixels, color, power):
+    r = color[0] * power
+    g = color[1] * power
+    b = color[2] * power
+    for i in range(len(pixels)):
+        twinkle = random.uniform(0.5, 1.5)
+        pixels[i] = (
+            min(int(r * twinkle), 255),
+            min(int(g * twinkle), 255),
+            min(int(b * twinkle), 255),
+        )
 
 
 def mix(color_1, color_2, weight_2):
@@ -55,5 +79,5 @@ def draw_weaved(spell, pixels, ellapsed_time, progress):
 
 
 def draw_spell(spell, pixels, ellapsed_time):
-    # print("Power: ", spell_state.power)
-    spell.draw(pixels, ellapsed_time)
+    color = SPELL_COLORS[spell.name]
+    draw_simple(pixels, color, spell.power)
