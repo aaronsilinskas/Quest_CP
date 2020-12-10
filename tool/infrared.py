@@ -35,7 +35,7 @@ class Infrared(object):
     def send(self, data):
         self._wait_for_traffic()
 
-        print("Sending: ", data)
+        print("IR Sending: ", data)
         # length = header + (data * 8 bits per byte) + crc bits + lead out
         durations = array.array("H", [0] * (2 + len(data) * 8 + 8 + 1))
         durations[0] = IR_HEADER_MARK
@@ -48,12 +48,12 @@ class Infrared(object):
             duration_index += 8
 
         crc = _calculate_crc(data)
-        print("CRC: ", bin(crc))
+        # print("CRC: ", bin(crc))
         self._encode_byte(durations, duration_index, crc)
 
-        print("Durations: ", durations)
+        # print("Durations: ", durations)
         self._ir_pulseout.send(durations)
-        print("Sent")
+        # print("Sent")
 
     def _wait_for_traffic(self):
         while True:

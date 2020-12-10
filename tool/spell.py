@@ -3,11 +3,11 @@ import random
 
 class Spell(object):
     def __init__(self):
-        pass
+        self._name = type(self).__name__[: -len("Spell")]
 
     @property
     def name(self):
-        return type(self).__name__
+        return self._name
 
     def draw(self, pixels, state, ellapsed):
         pass
@@ -37,14 +37,6 @@ class SpellState:
     @property
     def power(self):
         return self.__power
-
-    @property
-    def power_increasing(self):
-        return self.__power > self.previous_power
-
-    @property
-    def power_decreasing(self):
-        return self.__power < self.previous_power
 
     @power.setter
     def power(self, v):
@@ -80,27 +72,38 @@ class WindSpell(Spell):
 
 spells = [LightSpell(), FireSpell(), WaterSpell(), EarthSpell(), WindSpell()]
 
+VERT_DOWN = 1
+VERT_LOW = 2
+VERT_MIDDLE = 3
+VERT_HIGH = 4
+VERT_UP = 5
+
 
 def map_vert(acceleration):
     x = acceleration[0]
     if x > 0.75:
-        return "down"
+        return VERT_DOWN
     if x > 0.25:
-        return "low"
+        return VERT_LOW
     if x > -0.25:
-        return "middle"
+        return VERT_MIDDLE
     if x > -0.75:
-        return "high"
-    return "up"
+        return VERT_HIGH
+    return VERT_UP
+
+
+HORZ_FLAT = 1
+HORZ_ANGLE = 2
+HORZ_EDGE = 3
 
 
 def map_horz(acceleration):
-    y = acceleration[1]
-    if abs(y) < 0.25:
-        return "flat"
-    if abs(y) < 0.75:
-        return "angle"
-    return "edge"
+    y = abs(acceleration[1])
+    if y < 0.35:
+        return HORZ_FLAT
+    if y < 0.65:
+        return HORZ_ANGLE
+    return HORZ_EDGE
 
 
 def select_spell(initial_acceleration, current_acceleration):
@@ -119,24 +122,36 @@ def select_spell(initial_acceleration, current_acceleration):
         )
     )
 
-    if initial_vert == "up" and current_vert == "up":
+    if initial_vert == VERT_UP and current_vert == VERT_UP:
         return LightSpell()
 
     if (
-        initial_vert == "middle"
-        and current_vert == "middle"
-        and initial_horz == "flat"
-        and current_horz == "edge"
+        initial_vert == VERT_MIDDLE
+        and initial_horz == HORZ_FLAT
+        and current_vert == VERT_MIDDLE
+        and current_horz == HORZ_EDGE
     ):
         return FireSpell()
 
-    if initial_vert == "up" and current_vert == "middle" and current_horz == "flat":
+    if (
+        initial_vert == VERT_UP
+        and current_vert == VERT_MIDDLE
+        and current_horz == HORZ_FLAT
+    ):
         return WindSpell()
 
-    if initial_vert == "down" and current_vert == "middle" and current_horz == "flat":
+    if (
+        initial_vert == VERT_DOWN
+        and current_vert == VERT_MIDDLE
+        and current_horz == HORZ_FLAT
+    ):
         return WaterSpell()
 
-    if initial_vert == "down" and current_vert == "middle" and current_horz == "edge":
+    if (
+        initial_vert == VERT_DOWN
+        and current_vert == VERT_MIDDLE
+        and current_horz == HORZ_EDGE
+    ):
         return EarthSpell()
 
     return None
