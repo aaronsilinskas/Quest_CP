@@ -29,20 +29,8 @@ class SpellState:
     def __init__(self, spell, power=0, lifespan=10):
         self.spell = spell
         self.name = spell.name
-        self.__power = power
-        self.max_power = power
-        self.previous_power = power
+        self.power = power
         self.lifespan = lifespan
-
-    @property
-    def power(self):
-        return self.__power
-
-    @power.setter
-    def power(self, v):
-        self.previous_power = self.__power
-        self.__power = v
-        self.max_power = max(self.__power, v)
 
 
 class LightSpell(Spell):
@@ -79,7 +67,7 @@ VERT_HIGH = 4
 VERT_UP = 5
 
 
-def map_vert(acceleration):
+def _map_vert(acceleration):
     x = acceleration[0]
     if x > 0.75:
         return VERT_DOWN
@@ -97,7 +85,7 @@ HORZ_ANGLE = 2
 HORZ_EDGE = 3
 
 
-def map_horz(acceleration):
+def _map_horz(acceleration):
     y = abs(acceleration[1])
     if y < 0.35:
         return HORZ_FLAT
@@ -111,10 +99,10 @@ def select_spell(initial_acceleration, current_acceleration):
     # z, y = rotation. Flat = abs(z)=1, y=0. On edge = abs(z)=0,abs(y)=1
     # vert: Up = -1, Down = 1
     # Horz: Flat = 0, Edge = 1, -1
-    initial_vert = map_vert(initial_acceleration)
-    initial_horz = map_horz(initial_acceleration)
-    current_vert = map_vert(current_acceleration)
-    current_horz = map_horz(current_acceleration)
+    initial_vert = _map_vert(initial_acceleration)
+    initial_horz = _map_horz(initial_acceleration)
+    current_vert = _map_vert(current_acceleration)
+    current_horz = _map_horz(current_acceleration)
 
     print(
         "Initial: {} {} -> Current {} {}".format(
