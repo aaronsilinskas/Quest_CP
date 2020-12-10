@@ -3,7 +3,7 @@ import time
 from hardware import Hardware
 from sound import Sound
 from state import State, StateMachine
-from spell import select_spell, SpellState, age_spells
+from spell import select_spell, age_spells
 from lights import draw_casting, draw_spell, draw_weaved, PixelEdge
 from infrared import Infrared
 from event import Events
@@ -65,7 +65,7 @@ def diff_iterable(it1, it2):
 # == States ==
 class GlobalState:
     initial_acceleration = [None, None, None]
-    active_spell_states = []
+    active_spells = []
     casting_spell = None
     casting_progress = 0
     weaved_spell = None
@@ -95,7 +95,7 @@ class Triggered(State):
         gs.initial_acceleration = hw.current_acceleration
 
     def update(self, ellapsed_time):
-        if (not hw.trigger_down) and (len(gs.active_spell_states) > 0):
+        if (not hw.trigger_down) and (len(gs.active_spells) > 0):
             return "Casting"
 
         self.time_remaining -= ellapsed_time
@@ -114,7 +114,7 @@ class Casting(State):
     def enter(self):
         State.enter(self)
         self.ellapsed_total = 0
-        gs.casting_spell = gs.active_spell_states.pop(0)
+        gs.casting_spell = gs.active_spells.pop(0)
         gs.casting_progress = 0
 
         print(
@@ -173,9 +173,8 @@ class Weaving(State):
             spell = select_spell(gs.initial_acceleration, hw.current_acceleration)
             if spell is None:
                 return "Idle"
-
-            spell_state = SpellState(spell, 1)
-            gs.active_spell_states.insert(0, spell_state)
+            spell.power = 1
+            gs.active_spells.insert(0, spell)
             return "Weaved"
         return self.name
 
@@ -187,7 +186,7 @@ class Weaved(State):
     def enter(self):
         State.enter(self)
         self.ellapsed_total = 0
-        gs.weaved_spell = gs.active_spell_states[0]
+        gs.weaved_spell = gs.active_spells[0]
         gs.weaved_progress = 0
         play_weaved()
         print(
@@ -216,8 +215,8 @@ while True:
 
     state_machine.update(ellapsed_time)
 
-    spell_was_active = len(gs.active_spell_states)
-    gs.active_spell_states = age_spells(gs.active_spell_states, ellapsed_time)
+    spell_was_active = len(gs.active_spells)
+    gs.active_spells = age_spells(gs.active_spells, ellapsed_time)
 
     if gs.casting_spell:
         draw_casting(gs.casting_spell, left_edge, ellapsed_time, gs.casting_progress)
@@ -225,8 +224,8 @@ while True:
     elif gs.weaved_spell:
         draw_weaved(gs.weaved_spell, left_edge, ellapsed_time, gs.weaved_progress)
         draw_weaved(gs.weaved_spell, right_edge, ellapsed_time, gs.weaved_progress)
-    elif len(gs.active_spell_states) > 0:
-        active_spell = gs.active_spell_states[0]
+    elif len(gs.active_spells) > 0:
+        active_spell = gs.active_spells[0]
         draw_spell(active_spell, left_edge, ellapsed_time)
         draw_spell(active_spell, right_edge, ellapsed_time)
     else:

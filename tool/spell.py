@@ -4,12 +4,23 @@ import random
 class Spell(object):
     def __init__(self):
         self._name = type(self).__name__[: -len("Spell")]
+        self._power = 0
+        self.lifespan = 10
 
     @property
     def name(self):
         return self._name
 
-    def draw(self, pixels, state, ellapsed):
+    @property
+    def power(self):
+        return self._power
+
+    @power.setter
+    def power(self, power):
+        self._power = power
+        self.max_power = max(self._power, power)
+
+    def draw(self, pixels, ellapsed):
         pass
 
     def draw_simple(self, pixels, color, power):
@@ -25,40 +36,30 @@ class Spell(object):
             )
 
 
-class SpellState:
-    def __init__(self, spell, power=0, lifespan=10):
-        self.spell = spell
-        self.name = spell.name
-        self.power = power
-        self.lifespan = lifespan
-
-
 class LightSpell(Spell):
-    def draw(self, pixels, state, ellapsed):
-        self.draw_simple(pixels, (255, 255, 255), state.power)
+    def draw(self, pixels, ellapsed):
+        self.draw_simple(pixels, (255, 255, 255), self.power)
 
 
 class FireSpell(Spell):
-    def draw(self, pixels, state, ellapsed):
-        self.draw_simple(pixels, (255, 0, 0), state.power)
+    def draw(self, pixels, ellapsed):
+        self.draw_simple(pixels, (255, 0, 0), self.power)
 
 
 class WaterSpell(Spell):
-    def draw(self, pixels, state, ellapsed):
-        self.draw_simple(pixels, (0, 64, 255), state.power)
+    def draw(self, pixels, ellapsed):
+        self.draw_simple(pixels, (0, 64, 255), self.power)
 
 
 class EarthSpell(Spell):
-    def draw(self, pixels, state, ellapsed):
-        self.draw_simple(pixels, (210, 105, 30), state.power)
+    def draw(self, pixels, ellapsed):
+        self.draw_simple(pixels, (210, 105, 30), self.power)
 
 
 class WindSpell(Spell):
-    def draw(self, pixels, state, ellapsed):
-        self.draw_simple(pixels, (255, 0, 255), state.power)
+    def draw(self, pixels, ellapsed):
+        self.draw_simple(pixels, (255, 0, 255), self.power)
 
-
-spells = [LightSpell(), FireSpell(), WaterSpell(), EarthSpell(), WindSpell()]
 
 VERT_DOWN = 1
 VERT_LOW = 2
@@ -145,10 +146,10 @@ def select_spell(initial_acceleration, current_acceleration):
     return None
 
 
-def age_spells(spell_states, ellapsed_time):
-    for spell in spell_states:
+def age_spells(spells, ellapsed_time):
+    for spell in spells:
         spell.lifespan = max(spell.lifespan - ellapsed_time, 0)
         if spell.lifespan <= 1:
             spell.power = max(spell.max_power * spell.lifespan, 0)
 
-    return [spell for spell in spell_states if spell.lifespan > 0]
+    return [spell for spell in spells if spell.lifespan > 0]

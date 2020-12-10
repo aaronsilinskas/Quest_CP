@@ -37,8 +37,8 @@ def apply_brighten(pixels, index, offset):
     pixels[index] = (r, g, b)
 
 
-def draw_casting(spell_state, pixels, ellapsed_time, progress, darkener=True):
-    draw_spell(spell_state, pixels, ellapsed_time)
+def draw_casting(spell, pixels, ellapsed_time, progress, darkener=True):
+    draw_spell(spell, pixels, ellapsed_time)
     # TODO hardcoded for prototype, replace with pixel map
     brightener_pos = int(len(pixels) * progress) + 2
     for index in range(brightener_pos - 4, brightener_pos):
@@ -50,10 +50,10 @@ def draw_casting(spell_state, pixels, ellapsed_time, progress, darkener=True):
                 pixels[index] = (0, 0, 0)
 
 
-def draw_weaved(spell_state, pixels, ellapsed_time, progress):
-    draw_casting(spell_state, pixels, ellapsed_time, progress, darkener=False)
+def draw_weaved(spell, pixels, ellapsed_time, progress):
+    draw_casting(spell, pixels, ellapsed_time, progress, darkener=False)
 
 
-def draw_spell(spell_state, pixels, ellapsed_time):
+def draw_spell(spell, pixels, ellapsed_time):
     # print("Power: ", spell_state.power)
-    spell_state.spell.draw(pixels, spell_state, ellapsed_time)
+    spell.draw(pixels, ellapsed_time)
