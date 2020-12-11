@@ -1,8 +1,16 @@
+from event import SPELL_EVENT
+
+
 class Spell(object):
-    def __init__(self):
+    def __init__(self, spell_id):
+        self._spell_id = spell_id
         self._name = type(self).__name__[: -len("Spell")]
         self._power = 0
         self.lifespan = 10
+
+    @property
+    def spell_id(self):
+        return self._spell_id
 
     @property
     def name(self):
@@ -17,25 +25,47 @@ class Spell(object):
         self._power = power
         self.max_power = max(self._power, power)
 
+    def send(self, out, team=1):
+        power_byte = 255 * self.power & 0xFF
+
+        print("Sending event: ", self.name, self.spell_id, power_byte, team)
+
+        data = bytes((SPELL_EVENT, self._spell_id, power_byte, team))
+        out.send(data)
+
 
 class LightSpell(Spell):
-    pass
+    def __init__(self):
+        Spell.__init__(self, 1)
 
 
 class FireSpell(Spell):
-    pass
+    def __init__(self):
+        Spell.__init__(self, 2)
 
 
 class WaterSpell(Spell):
-    pass
+    def __init__(self):
+        Spell.__init__(self, 3)
 
 
 class EarthSpell(Spell):
-    pass
+    def __init__(self):
+        Spell.__init__(self, 4)
 
 
 class WindSpell(Spell):
-    pass
+    def __init__(self):
+        Spell.__init__(self, 5)
+
+
+def receive_spell(data):
+    if len(data) < 4 or data[0] != SPELL_EVENT:
+        return
+    spell_id = data[1]
+    power = data[2]
+    team = data[3]
+    print("Spell received: ", spell_id, power, team)
 
 
 VERT_DOWN = 1

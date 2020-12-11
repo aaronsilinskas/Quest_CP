@@ -3,10 +3,9 @@ import time
 from hardware import Hardware
 from sound import Sound
 from state import State, StateMachine
-from spell import select_spell, age_spells
+from spell import select_spell, age_spells, receive_spell
 from lights import draw_casting, draw_spell, draw_weaved, PixelEdge
 from infrared import Infrared
-from event import Events
 
 
 # Spell States
@@ -37,8 +36,6 @@ sound = Sound(hw.audio)
 sound.volume(0.5)
 
 infrared = Infrared(hw.ir_pulseout, hw.ir_pulsein)
-
-events = Events(infrared)
 
 # == Global Functions ==
 def play_cast():
@@ -124,7 +121,7 @@ class Casting(State):
         )
 
         play_cast()
-        events.send_spell(gs.casting_spell.name, gs.casting_spell.power)
+        gs.casting_spell.send(infrared)
 
     def update(self, ellapsed_time):
         self.ellapsed_total += ellapsed_time
@@ -239,8 +236,12 @@ while True:
         infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])
         time.sleep(0.5)
 
-    pulses = infrared.receive()
-    if pulses is not None:
-        print("IR Pulses Received: ", pulses)
+    received = infrared.receive()
+    if received is not None:
+        data, margin = received
+        print("IR Data Received: ", data, margin)
+
+        receive_spell(data)
+        # add other receivers that'll handle different events
 
     sound.cleanup()
