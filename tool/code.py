@@ -215,7 +215,9 @@ while True:
     state_machine.update(ellapsed_time)
 
     hitpoints_per_second = gs.max_hitpoints / gs.full_heal_time
-    gs.hitpoints = min(gs.max_hitpoints, gs.hitpoints + (hitpoints_per_second * ellapsed_time))
+    gs.hitpoints = min(
+        gs.max_hitpoints, gs.hitpoints + (hitpoints_per_second * ellapsed_time)
+    )
 
     spell_was_active = len(gs.active_spells)
     gs.active_spells = age_spells(gs.active_spells, ellapsed_time)
@@ -237,8 +239,9 @@ while True:
 
     hw.pixels.show()
 
-    draw_hitpoints(hw.board_pixels, gs.hitpoints, gs.max_hitpoints)
-    hw.board_pixels.show()
+    if hw.board_pixels:
+        draw_hitpoints(hw.board_pixels, gs.hitpoints, gs.max_hitpoints)
+        hw.board_pixels.show()
 
     if hw.button_a_down:
         infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])

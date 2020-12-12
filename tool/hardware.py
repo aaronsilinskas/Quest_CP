@@ -80,18 +80,26 @@ class Hardware(object):
             print("Infrared Max Pulses: ", ir_in_max_pulses)
 
         self._pixels = None
-        self._board_pixels = None
         if hasattr(board, "NEOPIXEL"):
-            self._board_pixels = neopixel.NeoPixel(board.NEOPIXEL, 10, brightness=0.2, auto_write=False)
+            self._board_pixels = neopixel.NeoPixel(
+                board.NEOPIXEL, 10, brightness=0.2, auto_write=False
+            )
+        else:
+            self._board_pixels = None
 
         self._last_update_time = time.monotonic()
 
-        if hasattr(board, "BUTTON_A"):
-            self._button_a = digital_in(board.BUTTON_A)
-        if hasattr(board, "BUTTON_B"):
-            self._button_b = digital_in(board.BUTTON_B)
-        if hasattr(board, "SLIDE_SWITCH"):
-            self._switch = digital_in(board.SLIDE_SWITCH, Pull.UP)
+        self._button_a = (
+            digital_in(board.BUTTON_A) if hasattr(board, "BUTTON_A") else None
+        )
+        self._button_b = (
+            digital_in(board.BUTTON_B) if hasattr(board, "BUTTON_B") else None
+        )
+        self._switch = (
+            digital_in(board.SLIDE_SWITCH, Pull.UP)
+            if hasattr(board, "SLIDE_SWITCH")
+            else None
+        )
 
     def setup_pixels_dotstar(self, clock, data, count, brightness):
         self._pixels = adafruit_dotstar.DotStar(
@@ -136,7 +144,7 @@ class Hardware(object):
 
     @property
     def current_acceleration(self):
-        return self._current_acceleration
+        return self._current_acceleration if self._accelerometer else None
 
     @property
     def audio(self):
@@ -152,12 +160,12 @@ class Hardware(object):
 
     @property
     def button_a_down(self):
-        return self._button_a_down
+        return self._button_a_down if self._button_a is not None else False
 
     @property
     def button_b_down(self):
-        return self._button_b_down
+        return self._button_b_down if self._button_b is not None else False
 
     @property
     def switch_on(self):
-        return self._switch_on
+        return self._switch_on if self._switch is not None else False
