@@ -4,6 +4,7 @@ import time
 import busio
 import pwmio
 import pulseio
+import neopixel
 import adafruit_lis3dh
 import adafruit_dotstar
 
@@ -79,6 +80,10 @@ class Hardware(object):
             print("Infrared Max Pulses: ", ir_in_max_pulses)
 
         self._pixels = None
+        self._board_pixels = None
+        if hasattr(board, "NEOPIXEL"):
+            self._board_pixels = neopixel.NeoPixel(board.NEOPIXEL, 10, brightness=0.2, auto_write=False)
+
         self._last_update_time = time.monotonic()
 
         if hasattr(board, "BUTTON_A"):
@@ -124,6 +129,10 @@ class Hardware(object):
     @property
     def pixels(self):
         return self._pixels
+
+    @property
+    def board_pixels(self):
+        return self._board_pixels
 
     @property
     def current_acceleration(self):

@@ -4,7 +4,7 @@ from hardware import Hardware
 from sound import Sound
 from state import State, StateMachine
 from spell import select_spell, age_spells, receive_spell
-from lights import draw_casting, draw_spell, draw_weaved, PixelEdge
+from lights import draw_casting, draw_spell, draw_weaved, PixelEdge, draw_hitpoints
 from infrared import Infrared
 
 
@@ -67,6 +67,9 @@ class GlobalState:
     casting_progress = 0
     weaved_spell = None
     weaved_progress = 0
+    max_hitpoints = 255 * 5
+    hitpoints = max_hitpoints
+    full_heal_time = 90
 
 
 gs = GlobalState()
@@ -212,6 +215,9 @@ while True:
 
     state_machine.update(ellapsed_time)
 
+    hitpoints_per_second = gs.max_hitpoints / gs.full_heal_time
+    gs.hitpoints = min(gs.max_hitpoints, gs.hitpoints + (hitpoints_per_second * ellapsed_time))
+
     spell_was_active = len(gs.active_spells)
     gs.active_spells = age_spells(gs.active_spells, ellapsed_time)
 
@@ -232,6 +238,9 @@ while True:
 
     hw.pixels.show()
 
+    draw_hitpoints(hw.board_pixels, gs.hitpoints, gs.max_hitpoints)
+    hw.board_pixels.show()
+
     if hw.button_a_down:
         infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])
         time.sleep(0.5)
@@ -241,7 +250,7 @@ while True:
         data, margin = received
         print("IR Data Received: ", data, margin)
 
-        receive_spell(data)
+        receive_spell(data, gs)
         # add other receivers that'll handle different events
 
     sound.cleanup()

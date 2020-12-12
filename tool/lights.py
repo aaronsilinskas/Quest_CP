@@ -1,4 +1,5 @@
 import random
+import math
 
 SPELL_COLORS = {
     "Light": (255, 255, 255),
@@ -81,3 +82,27 @@ def draw_weaved(spell, pixels, ellapsed_time, progress):
 def draw_spell(spell, pixels, ellapsed_time):
     color = SPELL_COLORS[spell.name]
     draw_simple(pixels, color, spell.power)
+
+def draw_hitpoints(pixels, current_hp, max_hp):
+    pixels.fill((0, 0, 0))
+
+    pixels_to_light = min(pixels.n, current_hp * pixels.n / max_hp)
+    last_pixel = math.floor(pixels_to_light)
+    last_pixel_brightness = pixels_to_light % 1
+    if last_pixel < pixels.n and last_pixel_brightness > 0:
+        last_pixel += 1
+
+    # if last_pixel_brightness > 0:
+        # print("Last pixel", pixels_to_light, last_pixel, pixels.n, last_pixel_brightness)
+
+    for index in range(last_pixel):
+        brightness = 1
+        if index == last_pixel - 1 and pixels_to_light < pixels.n:
+            brightness = last_pixel_brightness
+        red = round(32 * (1 - brightness))
+        green = round(64 * brightness)
+        blue = round(64 * brightness / 4)
+        # if brightness != 1:
+          #  print("RGB ", index, red, green, blue)
+        pixels[index] = (red, green, blue)
+    # print("Hitpoints: ", current_hp, max_hp)
