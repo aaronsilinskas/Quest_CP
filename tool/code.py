@@ -33,7 +33,6 @@ left_edge = PixelEdge(hw.pixels, range(0, 7))
 right_edge = PixelEdge(hw.pixels, range(13, 7, -1))
 
 sound = Sound(hw.audio)
-sound.volume(0.5)
 
 infrared = Infrared(hw.ir_pulseout, hw.ir_pulsein)
 
@@ -253,4 +252,4 @@ while True:
         receive_spell(data, gs)
         # add other receivers that'll handle different events
 
-    sound.cleanup()
+    sound.update(hw.current_acceleration)
