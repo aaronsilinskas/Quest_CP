@@ -32,30 +32,12 @@ class Hardware(object):
     def __init__(
         self,
         trigger_pin,
-        accelerometer_pin=None,
         audio_pin=None,
         ir_out_pin=None,
         ir_in_pin=None,
         ir_in_max_pulses=256,
     ):
         self._trigger = digital_in(trigger_pin, Pull.UP)
-
-        if accelerometer_pin is not None:
-            i2c = busio.I2C(board.SCL, board.SDA)
-            int1 = DigitalInOut(accelerometer_pin)
-            self._accelerometer = adafruit_lis3dh.LIS3DH_I2C(i2c, int1=int1)
-            print("Accelerometer: ", accelerometer_pin)
-        elif hasattr(board, "ACCELEROMETER_SCL"):
-            i2c = busio.I2C(board.ACCELEROMETER_SCL, board.ACCELEROMETER_SDA)
-            int1 = DigitalInOut(board.ACCELEROMETER_INTERRUPT)
-            self._accelerometer = adafruit_lis3dh.LIS3DH_I2C(
-                i2c, address=0x19, int1=int1
-            )
-            print("Accelerometer: internal")
-        else:
-            self._accelerometer = None
-        if self._accelerometer is not None:
-            self._accelerometer.range = adafruit_lis3dh.RANGE_4_G
 
         if audio_pin is not None:
             self._audio = AudioOut(audio_pin)
@@ -79,13 +61,14 @@ class Hardware(object):
             print("Infrared Input: ", ir_in_pin)
             print("Infrared Max Pulses: ", ir_in_max_pulses)
 
+        self._accelerometer = None
+        self._current_acceleration = None
         self._pixels = None
+        self._board_pixels = None
         if hasattr(board, "NEOPIXEL"):
             self._board_pixels = neopixel.NeoPixel(
                 board.NEOPIXEL, 10, brightness=0.2, auto_write=False
             )
-        else:
-            self._board_pixels = None
 
         self._last_update_time = time.monotonic()
 
@@ -100,6 +83,20 @@ class Hardware(object):
             if hasattr(board, "SLIDE_SWITCH")
             else None
         )
+
+    def setup_lis3dh(self, interrupt_pin, range=adafruit_lis3dh.RANGE_4_G):
+        i2c = busio.I2C(board.SCL, board.SDA)
+        int1 = DigitalInOut(interrupt_pin)
+        self._accelerometer = adafruit_lis3dh.LIS3DH_I2C(i2c, int1=int1)
+        self._accelerometer.range = range
+        print("Accelerometer: ", interrupt_pin)
+
+    def setup_onboard_lis3dh(self, range=adafruit_lis3dh.RANGE_4_G):
+        i2c = busio.I2C(board.ACCELEROMETER_SCL, board.ACCELEROMETER_SDA)
+        int1 = DigitalInOut(board.ACCELEROMETER_INTERRUPT)
+        self._accelerometer = adafruit_lis3dh.LIS3DH_I2C(i2c, address=0x19, int1=int1)
+        self._accelerometer.range = range
+        print("Accelerometer: internal")
 
     def setup_pixels_dotstar(self, clock, data, count, brightness):
         self._pixels = adafruit_dotstar.DotStar(

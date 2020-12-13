@@ -27,6 +27,7 @@ from infrared import Infrared
 # - if done activating -> Idle
 
 hw = Hardware(board.A2, ir_out_pin=board.D1, ir_in_pin=board.D0)
+hw.setup_onboard_lis3dh()
 hw.setup_pixels_dotstar(board.A3, board.A1, 14, 0.2)
 
 left_edge = PixelEdge(hw.pixels, range(0, 7))

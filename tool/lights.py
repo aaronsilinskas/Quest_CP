@@ -83,6 +83,7 @@ def draw_spell(spell, pixels, ellapsed_time):
     color = SPELL_COLORS[spell.name]
     draw_simple(pixels, color, spell.power)
 
+
 def draw_hitpoints(pixels, current_hp, max_hp):
     pixels.fill((0, 0, 0))
 
@@ -93,7 +94,7 @@ def draw_hitpoints(pixels, current_hp, max_hp):
         last_pixel += 1
 
     # if last_pixel_brightness > 0:
-        # print("Last pixel", pixels_to_light, last_pixel, pixels.n, last_pixel_brightness)
+    # print("Last pixel", pixels_to_light, last_pixel, pixels.n, last_pixel_brightness)
 
     for index in range(last_pixel):
         brightness = 1
@@ -103,6 +104,6 @@ def draw_hitpoints(pixels, current_hp, max_hp):
         green = round(64 * brightness)
         blue = round(64 * brightness / 4)
         # if brightness != 1:
-          #  print("RGB ", index, red, green, blue)
+        #  print("RGB ", index, red, green, blue)
         pixels[index] = (red, green, blue)
     # print("Hitpoints: ", current_hp, max_hp)
