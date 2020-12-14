@@ -30,11 +30,11 @@ from infrared import Infrared
 hw = Hardware()
 hw.setup_onboard_lis3dh()
 
-hw.setup_dotstars("blade", board.A3, board.A1, count=14, brightness=0.2)
+hw.setup_dotstars("blade", clock=board.A3, data=board.A1, count=14, brightness=0.2)
 left_edge = PixelEdge(hw.pixels["blade"], range(0, 7))
 right_edge = PixelEdge(hw.pixels["blade"], range(13, 7, -1))
 
-hw.setup_neopixels("health", board.NEOPIXEL, count=10, brightness=0.2)
+hw.setup_neopixels("health", data=board.NEOPIXEL, count=10, brightness=0.2)
 
 hw.setup_onboard_audio()
 sound = Sound(hw.audio)
