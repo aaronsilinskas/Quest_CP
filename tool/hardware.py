@@ -14,20 +14,6 @@ except ImportError:
     from audiopwmio import PWMAudioOut as AudioOut
 
 
-def digital_in(pin, pull):
-    input = DigitalInOut(pin)
-    input.direction = Direction.INPUT
-    input.pull = pull
-    return input
-
-
-def digital_out(pin, value=False):
-    output = DigitalInOut(pin)
-    output.direction = Direction.OUTPUT
-    output.value = value
-    return output
-
-
 class Hardware(object):
     def __init__(
         self, audio_pin=None, ir_out_pin=None, ir_in_pin=None, ir_in_max_pulses=256
@@ -36,7 +22,7 @@ class Hardware(object):
             self._audio = AudioOut(audio_pin)
             print("Audio: ", audio_pin)
         elif hasattr(board, "SPEAKER"):
-            digital_out(board.SPEAKER_ENABLE, True)
+            self._digital_out(board.SPEAKER_ENABLE, True)
             self._audio = AudioOut(board.SPEAKER)
         else:
             self._audio = None
@@ -60,6 +46,18 @@ class Hardware(object):
         self._switches = {}
 
         self._last_update_time = time.monotonic()
+
+    def _digital_in(self, pin, pull):
+        input = DigitalInOut(pin)
+        input.direction = Direction.INPUT
+        input.pull = pull
+        return input
+
+    def _digital_out(self, pin, value=False):
+        output = DigitalInOut(pin)
+        output.direction = Direction.OUTPUT
+        output.value = value
+        return output
 
     def setup_lis3dh(self, interrupt_pin, range=adafruit_lis3dh.RANGE_4_G):
         i2c = busio.I2C(board.SCL, board.SDA)
@@ -86,10 +84,10 @@ class Hardware(object):
         self._pixels[name] = pixels
 
     def setup_button(self, name, pin, pull):
-        self._buttons[name] = digital_in(pin, pull)
+        self._buttons[name] = self._digital_in(pin, pull)
 
     def setup_switch(self, name, pin, pull):
-        self._switches[name] = digital_in(pin, pull)
+        self._switches[name] = self._digital_in(pin, pull)
 
     def update(self):
         if self._accelerometer is not None:
