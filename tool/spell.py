@@ -61,7 +61,7 @@ class WindSpell(Spell):
 
 def receive_spell(data, global_state):
     if len(data) < 4 or data[0] != SPELL_EVENT:
-        return
+        return False
     spell_id = data[1]
     power = data[2]
     team = data[3]
@@ -69,6 +69,7 @@ def receive_spell(data, global_state):
 
     global_state.hitpoints = global_state.hitpoints - power
     print("Hitpoint reduced: ", power, global_state.hitpoints)
+    return True
 
 
 VERT_DOWN = 1

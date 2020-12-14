@@ -37,7 +37,7 @@ right_edge = PixelEdge(hw.pixels["blade"], range(13, 7, -1))
 hw.setup_neopixels("health", data=board.NEOPIXEL, count=10, brightness=0.2)
 
 hw.setup_onboard_audio()
-sound = Sound(hw.audio)
+sound = Sound(hw.audio, voices=2)
 
 hw.setup_ir_in(board.D0)
 hw.setup_ir_out(board.D1)
@@ -253,7 +253,9 @@ while True:
         data, margin = received
         print("IR Data Received: ", data, margin)
 
-        receive_spell(data, gs)
+        if receive_spell(data, gs):
+            sound.play_file("swing.wav", loop=False, voice=1)
         # add other receivers that'll handle different events
 
-    sound.update(hw.current_acceleration)
+    sound.update()
+    sound.volume_acceleration(0, hw.current_acceleration)
