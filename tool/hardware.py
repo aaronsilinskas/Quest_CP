@@ -14,7 +14,7 @@ except ImportError:
     from audiopwmio import PWMAudioOut as AudioOut
 
 
-def digital_in(pin, pull=Pull.DOWN):
+def digital_in(pin, pull):
     input = DigitalInOut(pin)
     input.direction = Direction.INPUT
     input.pull = pull
@@ -30,15 +30,8 @@ def digital_out(pin, value=False):
 
 class Hardware(object):
     def __init__(
-        self,
-        trigger_pin,
-        audio_pin=None,
-        ir_out_pin=None,
-        ir_in_pin=None,
-        ir_in_max_pulses=256,
+        self, audio_pin=None, ir_out_pin=None, ir_in_pin=None, ir_in_max_pulses=256
     ):
-        self._trigger = digital_in(trigger_pin, Pull.UP)
-
         if audio_pin is not None:
             self._audio = AudioOut(audio_pin)
             print("Audio: ", audio_pin)
@@ -62,22 +55,11 @@ class Hardware(object):
             print("Infrared Max Pulses: ", ir_in_max_pulses)
 
         self._accelerometer = None
-        self._current_acceleration = None
         self._pixels = {}
+        self._buttons = {}
+        self._switches = {}
 
         self._last_update_time = time.monotonic()
-
-        self._button_a = (
-            digital_in(board.BUTTON_A) if hasattr(board, "BUTTON_A") else None
-        )
-        self._button_b = (
-            digital_in(board.BUTTON_B) if hasattr(board, "BUTTON_B") else None
-        )
-        self._switch = (
-            digital_in(board.SLIDE_SWITCH, Pull.UP)
-            if hasattr(board, "SLIDE_SWITCH")
-            else None
-        )
 
     def setup_lis3dh(self, interrupt_pin, range=adafruit_lis3dh.RANGE_4_G):
         i2c = busio.I2C(board.SCL, board.SDA)
@@ -103,9 +85,13 @@ class Hardware(object):
         )
         self._pixels[name] = pixels
 
-    def update(self):
-        self._trigger_down = self._trigger.value == 0
+    def setup_button(self, name, pin, pull):
+        self._buttons[name] = digital_in(pin, pull)
 
+    def setup_switch(self, name, pin, pull):
+        self._switches[name] = digital_in(pin, pull)
+
+    def update(self):
         if self._accelerometer is not None:
             self._current_acceleration = [
                 value / adafruit_lis3dh.STANDARD_GRAVITY
@@ -119,10 +105,6 @@ class Hardware(object):
     @property
     def ellapsed_time(self):
         return self._ellapsed_time
-
-    @property
-    def trigger_down(self):
-        return self._trigger_down
 
     @property
     def pixels(self):
@@ -144,14 +126,12 @@ class Hardware(object):
     def ir_pulsein(self):
         return self._ir_pulsein
 
-    @property
-    def button_a_down(self):
-        return self._button_a.value == 1 if self._button_a is not None else False
+    def button_down(self, name):
+        button = self._buttons[name]
+        on = 0 if button.pull == Pull.UP else 1
+        return button.value == on
 
-    @property
-    def button_b_down(self):
-        return self._button_b.value == 1 if self._button_b is not None else False
-
-    @property
-    def switch_on(self):
-        return self._switch.value == 0 if self._switch is not None else False
+    def switch_on(self, name):
+        switch = self._switches[name]
+        on = 0 if switch.pull == Pull.UP else 1
+        return switch.value == on

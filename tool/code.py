@@ -1,6 +1,7 @@
 import board
 import time
 from hardware import Hardware
+from digitalio import Pull
 from sound import Sound
 from state import State, StateMachine
 from spell import select_spell, age_spells, receive_spell
@@ -26,10 +27,15 @@ from infrared import Infrared
 # Weaved (a spell was weaved, activate it)
 # - if done activating -> Idle
 
-hw = Hardware(board.A2, ir_out_pin=board.D1, ir_in_pin=board.D0)
+hw = Hardware(ir_out_pin=board.D1, ir_in_pin=board.D0)
 hw.setup_onboard_lis3dh()
 hw.setup_dotstars("blade", board.A3, board.A1, count=14, brightness=0.2)
 hw.setup_neopixels("health", board.NEOPIXEL, count=10, brightness=0.2)
+hw.setup_button("trigger", board.A2, Pull.UP)
+hw.setup_button("A", board.BUTTON_A, Pull.DOWN)
+hw.setup_button("B", board.BUTTON_B, Pull.DOWN)
+hw.setup_switch("switch", board.SLIDE_SWITCH, Pull.UP)
+
 
 left_edge = PixelEdge(hw.pixels["blade"], range(0, 7))
 right_edge = PixelEdge(hw.pixels["blade"], range(13, 7, -1))
@@ -80,7 +86,7 @@ state_machine = StateMachine()
 
 class Idle(State):
     def update(self, ellapsed_time):
-        if hw.trigger_down:
+        if hw.button_down("trigger"):
             return "Triggered"
         return self.name
 
@@ -96,15 +102,15 @@ class Triggered(State):
         gs.initial_acceleration = hw.current_acceleration
 
     def update(self, ellapsed_time):
-        if (not hw.trigger_down) and (len(gs.active_spells) > 0):
+        if (not hw.button_down("trigger")) and (len(gs.active_spells) > 0):
             return "Casting"
 
         self.time_remaining -= ellapsed_time
         if self.time_remaining <= 0:
-            if not hw.trigger_down:
-                return "Idle"
-            else:
+            if hw.button_down("trigger"):
                 return "Weaving"
+            else:
+                return "Idle"
         return self.name
 
 
@@ -162,7 +168,7 @@ class Weaving(State):
         # print_xyz("Min", self.min_acceleration)
         # print_xyz("Max", self.max_acceleration)
 
-        if not hw.trigger_down:
+        if not hw.button_down("trigger"):
             print("Trigger Up!")
             print_xyz("Initial", gs.initial_acceleration)
             print_xyz("Min", self.min_acceleration)
@@ -245,7 +251,7 @@ while True:
         draw_hitpoints(hw.pixels["health"], gs.hitpoints, gs.max_hitpoints)
         hw.pixels["health"].show()
 
-    if hw.button_a_down:
+    if hw.button_down("A"):
         infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])
         time.sleep(0.5)
 
