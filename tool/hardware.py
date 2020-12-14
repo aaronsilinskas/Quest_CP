@@ -63,12 +63,7 @@ class Hardware(object):
 
         self._accelerometer = None
         self._current_acceleration = None
-        self._pixels = None
-        self._board_pixels = None
-        if hasattr(board, "NEOPIXEL"):
-            self._board_pixels = neopixel.NeoPixel(
-                board.NEOPIXEL, 10, brightness=0.2, auto_write=False
-            )
+        self._pixels = {}
 
         self._last_update_time = time.monotonic()
 
@@ -98,10 +93,15 @@ class Hardware(object):
         self._accelerometer.range = range
         print("Accelerometer: internal")
 
-    def setup_pixels_dotstar(self, clock, data, count, brightness):
-        self._pixels = adafruit_dotstar.DotStar(
-            board.A3, board.A1, 14, brightness=brightness, auto_write=False
+    def setup_neopixels(self, name, data, count, brightness):
+        pixels = neopixel.NeoPixel(data, count, brightness=brightness, auto_write=False)
+        self._pixels[name] = pixels
+
+    def setup_dotstars(self, name, clock, data, count, brightness):
+        pixels = adafruit_dotstar.DotStar(
+            clock, data, count, brightness=brightness, auto_write=False
         )
+        self._pixels[name] = pixels
 
     def update(self):
         self._trigger_down = self._trigger.value == 0
@@ -111,13 +111,6 @@ class Hardware(object):
                 value / adafruit_lis3dh.STANDARD_GRAVITY
                 for value in self._accelerometer.acceleration
             ]
-
-        if self._button_a is not None:
-            self._button_a_down = self._button_a.value == 1
-        if self._button_b is not None:
-            self._button_b_down = self._button_b.value == 1
-        if self._switch is not None:
-            self._switch_on = self._switch.value == 0
 
         current_time = time.monotonic()
         self._ellapsed_time = current_time - self._last_update_time
@@ -134,10 +127,6 @@ class Hardware(object):
     @property
     def pixels(self):
         return self._pixels
-
-    @property
-    def board_pixels(self):
-        return self._board_pixels
 
     @property
     def current_acceleration(self):
@@ -157,12 +146,12 @@ class Hardware(object):
 
     @property
     def button_a_down(self):
-        return self._button_a_down if self._button_a is not None else False
+        return self._button_a.value == 1 if self._button_a is not None else False
 
     @property
     def button_b_down(self):
-        return self._button_b_down if self._button_b is not None else False
+        return self._button_b.value == 1 if self._button_b is not None else False
 
     @property
     def switch_on(self):
-        return self._switch_on if self._switch is not None else False
+        return self._switch.value == 0 if self._switch is not None else False

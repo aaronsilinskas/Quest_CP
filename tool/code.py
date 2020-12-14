@@ -28,10 +28,11 @@ from infrared import Infrared
 
 hw = Hardware(board.A2, ir_out_pin=board.D1, ir_in_pin=board.D0)
 hw.setup_onboard_lis3dh()
-hw.setup_pixels_dotstar(board.A3, board.A1, 14, 0.2)
+hw.setup_dotstars("blade", board.A3, board.A1, count=14, brightness=0.2)
+hw.setup_neopixels("health", board.NEOPIXEL, count=10, brightness=0.2)
 
-left_edge = PixelEdge(hw.pixels, range(0, 7))
-right_edge = PixelEdge(hw.pixels, range(13, 7, -1))
+left_edge = PixelEdge(hw.pixels["blade"], range(0, 7))
+right_edge = PixelEdge(hw.pixels["blade"], range(13, 7, -1))
 
 sound = Sound(hw.audio)
 
@@ -236,13 +237,13 @@ while True:
     else:
         if spell_was_active:
             sound.off()
-        hw.pixels.fill((0, 0, 0))
+        hw.pixels["blade"].fill((0, 0, 0))
 
-    hw.pixels.show()
+    hw.pixels["blade"].show()
 
-    if hw.board_pixels:
-        draw_hitpoints(hw.board_pixels, gs.hitpoints, gs.max_hitpoints)
-        hw.board_pixels.show()
+    if hw.pixels["health"]:
+        draw_hitpoints(hw.pixels["health"], gs.hitpoints, gs.max_hitpoints)
+        hw.pixels["health"].show()
 
     if hw.button_a_down:
         infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])
