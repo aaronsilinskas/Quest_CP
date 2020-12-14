@@ -27,22 +27,27 @@ from infrared import Infrared
 # Weaved (a spell was weaved, activate it)
 # - if done activating -> Idle
 
-hw = Hardware(ir_out_pin=board.D1, ir_in_pin=board.D0)
+hw = Hardware()
 hw.setup_onboard_lis3dh()
+
 hw.setup_dotstars("blade", board.A3, board.A1, count=14, brightness=0.2)
+left_edge = PixelEdge(hw.pixels["blade"], range(0, 7))
+right_edge = PixelEdge(hw.pixels["blade"], range(13, 7, -1))
+
 hw.setup_neopixels("health", board.NEOPIXEL, count=10, brightness=0.2)
+
+hw.setup_onboard_audio()
+sound = Sound(hw.audio)
+
+hw.setup_ir_in(board.D0)
+hw.setup_ir_out(board.D1)
+infrared = Infrared(hw.ir_pulseout, hw.ir_pulsein)
+
 hw.setup_button("trigger", board.A2, Pull.UP)
 hw.setup_button("A", board.BUTTON_A, Pull.DOWN)
 hw.setup_button("B", board.BUTTON_B, Pull.DOWN)
 hw.setup_switch("switch", board.SLIDE_SWITCH, Pull.UP)
 
-
-left_edge = PixelEdge(hw.pixels["blade"], range(0, 7))
-right_edge = PixelEdge(hw.pixels["blade"], range(13, 7, -1))
-
-sound = Sound(hw.audio)
-
-infrared = Infrared(hw.ir_pulseout, hw.ir_pulsein)
 
 # == Global Functions ==
 def play_cast():

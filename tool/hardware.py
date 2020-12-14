@@ -15,33 +15,12 @@ except ImportError:
 
 
 class Hardware(object):
-    def __init__(
-        self, audio_pin=None, ir_out_pin=None, ir_in_pin=None, ir_in_max_pulses=256
-    ):
-        if audio_pin is not None:
-            self._audio = AudioOut(audio_pin)
-            print("Audio: ", audio_pin)
-        elif hasattr(board, "SPEAKER"):
-            self._digital_out(board.SPEAKER_ENABLE, True)
-            self._audio = AudioOut(board.SPEAKER)
-        else:
-            self._audio = None
-
-        if ir_out_pin is not None:
-            self._ir_pwmout = pwmio.PWMOut(
-                ir_out_pin, frequency=38000, duty_cycle=2 ** 15
-            )
-            self._ir_pulseout = pulseio.PulseOut(self._ir_pwmout)
-            print("Infrared Output: ", ir_out_pin)
-        if ir_in_pin is not None:
-            self._ir_pulsein = pulseio.PulseIn(
-                ir_in_pin, maxlen=ir_in_max_pulses, idle_state=True
-            )
-            print("Infrared Input: ", ir_in_pin)
-            print("Infrared Max Pulses: ", ir_in_max_pulses)
-
+    def __init__(self):
         self._accelerometer = None
         self._pixels = {}
+        self._audio = None
+        self._ir_pulsein = None
+        self._ir_pulseout = None
         self._buttons = {}
         self._switches = {}
 
@@ -71,23 +50,45 @@ class Hardware(object):
         int1 = DigitalInOut(board.ACCELEROMETER_INTERRUPT)
         self._accelerometer = adafruit_lis3dh.LIS3DH_I2C(i2c, address=0x19, int1=int1)
         self._accelerometer.range = range
-        print("Accelerometer: internal")
+        print("Accelerometer: onboard")
 
     def setup_neopixels(self, name, data, count, brightness):
         pixels = neopixel.NeoPixel(data, count, brightness=brightness, auto_write=False)
         self._pixels[name] = pixels
+        print("Pixels: ", name, data, count)
 
     def setup_dotstars(self, name, clock, data, count, brightness):
         pixels = adafruit_dotstar.DotStar(
             clock, data, count, brightness=brightness, auto_write=False
         )
         self._pixels[name] = pixels
+        print("Dotstars: ", name, data, count)
+
+    def setup_onboard_audio(self):
+        self._digital_out(board.SPEAKER_ENABLE, True)
+        self._audio = AudioOut(board.SPEAKER)
+        print("Audio: onboard")
+
+    def setup_audio(self, pin):
+        self._audio = AudioOut(pin)
+        print("Audio: ", pin)
+
+    def setup_ir_in(self, pin, max_pulses=256):
+        self._ir_pulsein = pulseio.PulseIn(pin, maxlen=max_pulses, idle_state=True)
+        print("IR receiver: ", pin, max_pulses)
+
+    def setup_ir_out(self, pin):
+        self._ir_pwmout = pwmio.PWMOut(pin, frequency=38000, duty_cycle=2 ** 15)
+        self._ir_pulseout = pulseio.PulseOut(self._ir_pwmout)
+        print("IR transmitter: ", pin)
 
     def setup_button(self, name, pin, pull):
         self._buttons[name] = self._digital_in(pin, pull)
+        print("Button: ", name, pin, pull)
 
     def setup_switch(self, name, pin, pull):
         self._switches[name] = self._digital_in(pin, pull)
+        print("Switch: ", name, pin, pull)
 
     def update(self):
         if self._accelerometer is not None:
