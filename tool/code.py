@@ -50,18 +50,6 @@ hw.setup_switch("switch", board.SLIDE_SWITCH, Pull.UP)
 
 
 # == Global Functions ==
-def play_cast():
-    sound.play_file("hit.wav")
-
-
-def play_weaved():
-    sound.play_file("on.wav")
-
-
-def play_active():
-    sound.play_file("idle.wav", loop=True)
-
-
 def print_xyz(name, measurement):
     x, y, z = measurement
     print("(%0.3f,%0.3f,%0.3f) %s" % (x, y, z, name))
@@ -135,7 +123,7 @@ class Casting(State):
             )
         )
 
-        play_cast()
+        sound.play_file("hit.wav")
         gs.casting_spell.send(infrared)
 
     def update(self, ellapsed_time):
@@ -200,7 +188,7 @@ class Weaved(State):
         self.ellapsed_total = 0
         gs.weaved_spell = gs.active_spells[0]
         gs.weaved_progress = 0
-        play_weaved()
+        sound.play_file("on.wav")
         print(
             "Weaved: {} at power {}".format(gs.weaved_spell.name, gs.weaved_spell.power)
         )
@@ -210,7 +198,7 @@ class Weaved(State):
         gs.weaved_progress = min(self.ellapsed_total / 1, 1)
         if gs.weaved_progress == 1:
             gs.weaved_spell = None
-            play_active()
+            sound.play_file("idle.wav", loop=True)
             return "Idle"
         return self.name
 
