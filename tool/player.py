@@ -16,8 +16,12 @@ class Player(object):
         self.active_spells = self._age_spells(self.active_spells, ellapsed_time)
 
     def hit_by_spell(self, spell, team):
+        if team == self.team:
+            print("Hit by spell from same team: ", spell.name, spell.power)
+            return
+
         self.hitpoints = self.hitpoints - spell.power
-        print("Hitpoint reduced: ", spell.power, self.hitpoints)
+        print("Hitpoints reduced: ", spell.power, self.hitpoints)
 
     def _age_spells(self, spells, ellapsed_time):
         for spell in spells:
