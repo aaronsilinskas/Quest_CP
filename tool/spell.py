@@ -1,12 +1,22 @@
 from event import SPELL_EVENT
 
+spell_classes = {}
+
+
+def spell_for_id(spell_id):
+    class_name = spell_classes[spell_id]
+    klass = globals()[class_name]
+    return klass()
+
 
 class Spell(object):
     def __init__(self, spell_id):
         self._spell_id = spell_id
-        self._name = type(self).__name__[: -len("Spell")]
+        class_name = type(self).__name__
+        self._name = class_name[: -len("Spell")]
         self._power = 0
         self.lifespan = 10
+        spell_classes[spell_id] = class_name
 
     @property
     def spell_id(self):
@@ -25,7 +35,7 @@ class Spell(object):
         self._power = power
         self.max_power = max(self._power, power)
 
-    def send(self, out, team=1):
+    def send(self, out, team):
         power_byte = 255 * self.power & 0xFF
 
         print("Sending event: ", self.name, self.spell_id, power_byte, team)
@@ -59,51 +69,19 @@ class WindSpell(Spell):
         Spell.__init__(self, 5)
 
 
-def receive_spell(data, global_state):
+def receive_spell(data, player):
     if len(data) < 4 or data[0] != SPELL_EVENT:
         return False
+
     spell_id = data[1]
     power = data[2]
     team = data[3]
-    print("Spell received: ", spell_id, power, team)
+    spell = spell_for_id(spell_id)
+    spell.power = power
 
-    global_state.hitpoints = global_state.hitpoints - power
-    print("Hitpoint reduced: ", power, global_state.hitpoints)
+    print("Spell received: ", spell.name, spell_id, power, team)
+    player.hit_by_spell(spell, team)
     return True
-
-
-VERT_DOWN = 1
-VERT_LOW = 2
-VERT_MIDDLE = 3
-VERT_HIGH = 4
-VERT_UP = 5
-
-
-def _map_vert(acceleration):
-    x = acceleration[0]
-    if x > 0.75:
-        return VERT_DOWN
-    if x > 0.25:
-        return VERT_LOW
-    if x > -0.25:
-        return VERT_MIDDLE
-    if x > -0.75:
-        return VERT_HIGH
-    return VERT_UP
-
-
-HORZ_FLAT = 1
-HORZ_ANGLE = 2
-HORZ_EDGE = 3
-
-
-def _map_horz(acceleration):
-    y = abs(acceleration[1])
-    if y < 0.35:
-        return HORZ_FLAT
-    if y < 0.65:
-        return HORZ_ANGLE
-    return HORZ_EDGE
 
 
 def select_spell(initial_acceleration, current_acceleration):
@@ -157,10 +135,35 @@ def select_spell(initial_acceleration, current_acceleration):
     return None
 
 
-def age_spells(spells, ellapsed_time):
-    for spell in spells:
-        spell.lifespan = max(spell.lifespan - ellapsed_time, 0)
-        if spell.lifespan <= 1:
-            spell.power = max(spell.max_power * spell.lifespan, 0)
+VERT_DOWN = 1
+VERT_LOW = 2
+VERT_MIDDLE = 3
+VERT_HIGH = 4
+VERT_UP = 5
 
-    return [spell for spell in spells if spell.lifespan > 0]
+
+def _map_vert(acceleration):
+    x = acceleration[0]
+    if x > 0.75:
+        return VERT_DOWN
+    if x > 0.25:
+        return VERT_LOW
+    if x > -0.25:
+        return VERT_MIDDLE
+    if x > -0.75:
+        return VERT_HIGH
+    return VERT_UP
+
+
+HORZ_FLAT = 1
+HORZ_ANGLE = 2
+HORZ_EDGE = 3
+
+
+def _map_horz(acceleration):
+    y = abs(acceleration[1])
+    if y < 0.35:
+        return HORZ_FLAT
+    if y < 0.65:
+        return HORZ_ANGLE
+    return HORZ_EDGE

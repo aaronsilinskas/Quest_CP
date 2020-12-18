@@ -1,12 +1,15 @@
 import board
 import time
-from hardware import Hardware
+import random
+import math
 from digitalio import Pull
+from hardware import Hardware
 from sound import Sound
 from state import State, StateMachine
-from spell import select_spell, age_spells, receive_spell
+from spell import select_spell, receive_spell
 from lights import draw_casting, draw_spell, draw_weaved, PixelEdge, draw_hitpoints
 from infrared import Infrared
+from player import Player
 
 
 # Spell States
@@ -60,16 +63,15 @@ def diff_iterable(it1, it2):
 
 
 # == States ==
+player = Player(team=math.floor(random.uniform(2, 32)))
+
+
 class GlobalState:
     initial_acceleration = [None, None, None]
-    active_spells = []
     casting_spell = None
     casting_progress = 0
     weaved_spell = None
     weaved_progress = 0
-    max_hitpoints = 255 * 5
-    hitpoints = max_hitpoints
-    full_heal_time = 90
 
 
 gs = GlobalState()
@@ -95,7 +97,7 @@ class Triggered(State):
         gs.initial_acceleration = hw.current_acceleration
 
     def update(self, ellapsed_time):
-        if (not hw.button_down("trigger")) and (len(gs.active_spells) > 0):
+        if (not hw.button_down("trigger")) and (len(player.active_spells) > 0):
             return "Casting"
 
         self.time_remaining -= ellapsed_time
@@ -114,7 +116,7 @@ class Casting(State):
     def enter(self):
         State.enter(self)
         self.ellapsed_total = 0
-        gs.casting_spell = gs.active_spells.pop(0)
+        gs.casting_spell = player.active_spells.pop(0)
         gs.casting_progress = 0
 
         print(
@@ -124,7 +126,7 @@ class Casting(State):
         )
 
         sound.play_file("hit.wav")
-        gs.casting_spell.send(infrared)
+        gs.casting_spell.send(infrared, player.team)
 
     def update(self, ellapsed_time):
         self.ellapsed_total += ellapsed_time
@@ -174,7 +176,7 @@ class Weaving(State):
             if spell is None:
                 return "Idle"
             spell.power = 1
-            gs.active_spells.insert(0, spell)
+            player.active_spells.insert(0, spell)
             return "Weaved"
         return self.name
 
@@ -186,7 +188,7 @@ class Weaved(State):
     def enter(self):
         State.enter(self)
         self.ellapsed_total = 0
-        gs.weaved_spell = gs.active_spells[0]
+        gs.weaved_spell = player.active_spells[0]
         gs.weaved_progress = 0
         sound.play_file("on.wav")
         print(
@@ -215,13 +217,9 @@ while True:
 
     state_machine.update(ellapsed_time)
 
-    hitpoints_per_second = gs.max_hitpoints / gs.full_heal_time
-    gs.hitpoints = min(
-        gs.max_hitpoints, gs.hitpoints + (hitpoints_per_second * ellapsed_time)
-    )
+    spell_was_active = len(player.active_spells)
 
-    spell_was_active = len(gs.active_spells)
-    gs.active_spells = age_spells(gs.active_spells, ellapsed_time)
+    player.update(ellapsed_time)
 
     if gs.casting_spell:
         draw_casting(gs.casting_spell, left_edge, ellapsed_time, gs.casting_progress)
@@ -229,8 +227,8 @@ while True:
     elif gs.weaved_spell:
         draw_weaved(gs.weaved_spell, left_edge, ellapsed_time, gs.weaved_progress)
         draw_weaved(gs.weaved_spell, right_edge, ellapsed_time, gs.weaved_progress)
-    elif len(gs.active_spells) > 0:
-        active_spell = gs.active_spells[0]
+    elif len(player.active_spells) > 0:
+        active_spell = player.active_spells[0]
         draw_spell(active_spell, left_edge, ellapsed_time)
         draw_spell(active_spell, right_edge, ellapsed_time)
     else:
@@ -241,7 +239,7 @@ while True:
     hw.pixels["blade"].show()
 
     if hw.pixels["health"]:
-        draw_hitpoints(hw.pixels["health"], gs.hitpoints, gs.max_hitpoints)
+        draw_hitpoints(hw.pixels["health"], player.hitpoints, player.max_hitpoints)
         hw.pixels["health"].show()
 
     if hw.button_down("A"):
@@ -253,7 +251,7 @@ while True:
         data, margin = received
         print("IR Data Received: ", data, margin)
 
-        if receive_spell(data, gs):
+        if receive_spell(data, player):
             sound.play_file("swing.wav", loop=False, voice=1)
         # add other receivers that'll handle different events
 
