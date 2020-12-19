@@ -1,22 +1,30 @@
 from event import SPELL_EVENT
 
-spell_classes = {}
+
+spell_ids = {1: "Light", 2: "Fire", 3: "Water", 4: "Earth", 5: "Wind"}
+
+
+def id_for_spell(name):
+    for spell_id, spell_name in spell_ids.items():
+        if spell_name == name:
+            return spell_id
+    raise RuntimeError("Unknown spell: ", name)
 
 
 def spell_for_id(spell_id):
-    class_name = spell_classes[spell_id]
-    klass = globals()[class_name]
-    return klass()
+    if spell_id not in spell_ids:
+        print("Unknown spell ID: ", spell_id)
+        return
+    spell_name = spell_ids[spell_id]
+    return Spell(spell_name)
 
 
 class Spell(object):
-    def __init__(self, spell_id):
-        self._spell_id = spell_id
-        class_name = type(self).__name__
-        self._name = class_name[: -len("Spell")]
+    def __init__(self, name):
+        self._name = name
+        self._spell_id = id_for_spell(name)
         self._power = 0
         self.lifespan = 10
-        spell_classes[spell_id] = class_name
 
     @property
     def spell_id(self):
@@ -44,31 +52,6 @@ class Spell(object):
         out.send(data)
 
 
-class LightSpell(Spell):
-    def __init__(self):
-        Spell.__init__(self, 1)
-
-
-class FireSpell(Spell):
-    def __init__(self):
-        Spell.__init__(self, 2)
-
-
-class WaterSpell(Spell):
-    def __init__(self):
-        Spell.__init__(self, 3)
-
-
-class EarthSpell(Spell):
-    def __init__(self):
-        Spell.__init__(self, 4)
-
-
-class WindSpell(Spell):
-    def __init__(self):
-        Spell.__init__(self, 5)
-
-
 def receive_spell(data, player):
     if len(data) < 4 or data[0] != SPELL_EVENT:
         return False
@@ -77,6 +60,9 @@ def receive_spell(data, player):
     power = data[2]
     team = data[3]
     spell = spell_for_id(spell_id)
+    if spell is None:
+        return False
+
     spell.power = power
 
     print("Spell received: ", spell.name, spell_id, power, team)
@@ -101,7 +87,7 @@ def select_spell(initial_acceleration, current_acceleration):
     )
 
     if initial_vert == VERT_UP and current_vert == VERT_UP:
-        return LightSpell()
+        return Spell("Light")
 
     if (
         initial_vert == VERT_MIDDLE
@@ -109,28 +95,28 @@ def select_spell(initial_acceleration, current_acceleration):
         and current_vert == VERT_MIDDLE
         and current_horz == HORZ_EDGE
     ):
-        return FireSpell()
+        return Spell("Fire")
 
     if (
         initial_vert == VERT_UP
         and current_vert == VERT_MIDDLE
         and current_horz == HORZ_FLAT
     ):
-        return WindSpell()
+        return Spell("Wind")
 
     if (
         initial_vert == VERT_DOWN
         and current_vert == VERT_MIDDLE
         and current_horz == HORZ_FLAT
     ):
-        return WaterSpell()
+        return Spell("Water")
 
     if (
         initial_vert == VERT_DOWN
         and current_vert == VERT_MIDDLE
         and current_horz == HORZ_EDGE
     ):
-        return EarthSpell()
+        return Spell("Earth")
 
     return None
 
