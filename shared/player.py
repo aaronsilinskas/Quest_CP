@@ -24,8 +24,12 @@ class Player(object):
         print("Hitpoints reduced: ", spell.power, self.hitpoints)
 
     def _age_spells(self, spells, ellapsed_time):
+        surviving_spells = []
         for spell in spells:
             spell.lifespan = max(spell.lifespan - ellapsed_time, 0)
             if spell.lifespan <= 1:
                 spell.power = max(spell.max_power * spell.lifespan, 0)
-        return [spell for spell in spells if spell.lifespan > 0]
+            if spell.lifespan > 0:
+                surviving_spells.append(spell)
+
+        return surviving_spells
