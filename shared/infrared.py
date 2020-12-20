@@ -112,7 +112,9 @@ class IRDecoder(object):
                 pulse_error_margin = self._max_error_margin
                 self._reset_decode()
                 if received_crc == calculated_crc:
-                    return received_data, pulse_error_margin
+                    error_ratio = pulse_error_margin / IR_ERROR_MARGIN
+                    signal_strength = min(1, 1.3 - error_ratio)
+                    return received_data, signal_strength
                 else:
                     print("CRC mismatch: ", bin(received_crc), bin(calculated_crc))
             else:
