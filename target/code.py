@@ -42,8 +42,8 @@ while True:
 
     received = infrared.receive()
     if received is not None:
-        data, margin = received
-        print("IR Data Received: ", data, margin)
+        data, strength = received
+        print("IR Data Received: ", data, strength)
 
         if receive_spell(data, player):
             sound.play_file("hit.wav", loop=False, voice=1)
