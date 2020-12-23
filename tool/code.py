@@ -251,7 +251,10 @@ while True:
         data, margin = received
         print("IR Data Received: ", data, margin)
 
-        if receive_spell(data, player):
+        spell_event = receive_spell(data)
+        if spell_event:
+            spell, team = spell_event
+            player.hit_by_spell(spell, team)
             sound.play_file("swing.wav", loop=False, voice=1)
         # add other receivers that'll handle different events
 
