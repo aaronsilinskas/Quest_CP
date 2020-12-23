@@ -52,22 +52,21 @@ class Spell(object):
         out.send(data)
 
 
-def receive_spell(data, player):
+def receive_spell(data):
     if len(data) < 4 or data[0] != SPELL_EVENT:
-        return False
+        return None
 
     spell_id = data[1]
     power = data[2]
     team = data[3]
     spell = spell_for_id(spell_id)
     if spell is None:
-        return False
+        return None
 
     spell.power = power
 
     print("Spell received: ", spell.name, spell_id, power, team)
-    player.hit_by_spell(spell, team)
-    return True
+    return spell, team
 
 
 def select_spell(initial_acceleration, current_acceleration):
