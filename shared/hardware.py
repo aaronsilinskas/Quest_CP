@@ -1,5 +1,6 @@
 import board
 from digitalio import DigitalInOut, Direction, Pull
+from analogio import AnalogIn
 import time
 import busio
 import pwmio
@@ -23,6 +24,7 @@ class Hardware(object):
         self._ir_pulseout = None
         self._buttons = {}
         self._switches = {}
+        self._piezos = {}
 
         self._last_update_time = time.monotonic()
 
@@ -90,6 +92,10 @@ class Hardware(object):
         self._switches[name] = self._digital_in(pin, pull)
         print("Switch: ", name, pin, pull)
 
+    def setup_piezo_sensor(self, name, pin):
+        self._piezos[name] =  AnalogIn(pin)
+        print("Piezo: ", name, pin)
+
     def update(self):
         if self._accelerometer is not None:
             self._current_acceleration = [
@@ -134,3 +140,7 @@ class Hardware(object):
         switch = self._switches[name]
         on = 0 if switch.pull == Pull.UP else 1
         return switch.value == on
+
+    def piezo(self, name):
+        piezo = self._piezos[name]
+        return piezo.value / 65536
