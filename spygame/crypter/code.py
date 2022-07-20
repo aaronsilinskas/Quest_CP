@@ -14,7 +14,7 @@ from adafruit_led_animation.animation.sparklepulse import SparklePulse
 from adafruit_led_animation.animation.comet import Comet
 from adafruit_led_animation.animation.rainbowcomet import RainbowComet
 from adafruit_led_animation import helper
-from state import State, StateMachine
+from state import StateContext, State, StateMachine
 
 # CONFIGURATION
 
@@ -22,14 +22,10 @@ from state import State, StateMachine
 WHITE = 0xFFFFFF
 BLACK = 0x000000
 RED = 0xFF0000
-ORANGE = 0xFFA500
 YELLOW = 0xFFFF00
 GREEN = 0x00FF00
 BLUE = 0x0000FF
 PURPLE = 0x800080
-PINK = 0xFFC0CB
-TEAL = 0x2266AA
-MAGENTA = 0xFF00FF
 CYAN = 0x00FFFF
 
 # Secret messages and their color->key combinations
@@ -94,50 +90,66 @@ failedAnimation = Comet(macropad.pixels, speed=0.05,
 # STATE MACHINE
 
 
-class GlobalState:
+class CrypterContext(StateContext):
     def __init__(self):
-        self.state = None
+        super().__init__()
+
+        # booting
+        self.dot_group = 0
+
+        # selected clue
+        self.clue_message = None
+        self.clue_key_colors = []
+
+        # clue key entry
+        self.expected_key = 0
         self.keycode_index = 0
 
+        # message decrypt
+        self.encoder_start = 0
+        self.encoder_offset_desired = 0
 
-global_state = GlobalState()
-state_machine = StateMachine()
+
+class States:
+    booting: State
+    ready: State
+    keycoding: State
+    failed: State
+    message: State
 
 
 class Booting(State):
-    def enter(self, context):
+    def enter(self, context: CrypterContext):
         display_group[2].text = "Entangling Atoms"
-        context.active_time = 0
         context.dot_group = 3
 
-    def update(self, ellapsed_time, context):
-        context.active_time += ellapsed_time
-        num_dots = int((context.active_time % 1) * 20)
+    def update(self, context: CrypterContext):
+        num_dots = int((context.time_active % 1) * 20)
         display_group[context.dot_group].text = '.' * num_dots
-        if (context.active_time > 1):
+        if (context.time_active > 1):
             display_group[3].text = "Linking Quantum Net"
             context.dot_group = 4
-        if (context.active_time > 2):
+        if (context.time_active > 2):
             display_group[4].text = "Activating Defenses"
             context.dot_group = 5
-        if (context.active_time > 3):
-            return "Ready"
-        return self.name
+        if (context.time_active > 3):
+            return States.ready
+        return self
 
 
-state_machine.add_state(Booting())
+States.booting = Booting()
 
 
 class Ready(State):
-    def enter(self, context):
+    def enter(self, context: CrypterContext):
         for i in range(2, 7):
             display_group[i].text = ''
 
         macropad.pixels.brightness = 0.75
-        macropad.pixels.fill(0)
+        macropad.pixels.fill(BLACK)
         keypadAnimation.color = INITIAL_COLOR
 
-    def update(self, ellapsed_time, context):
+    def update(self, context: CrypterContext):
         event = macropad.keys.events.get()
         if event and event.pressed:
             key_number = event.key_number
@@ -148,19 +160,19 @@ class Ready(State):
                 context.clue_message = message
                 context.clue_key_colors = key_colors
 
-                return "Keycoding"
+                return States.keycoding
 
         keypadAnimation.animate()
         macropad.pixels.show()
 
-        return self.name
+        return self
 
 
-state_machine.add_state(Ready())
+States.ready = Ready()
 
 
 class Keycoding(State):
-    def enter(self, context):
+    def enter(self, context: CrypterContext):
         color, expected_key = context.clue_key_colors[0]
 
         context.keycode_index = 0
@@ -168,16 +180,16 @@ class Keycoding(State):
 
         keypadAnimation.color = color
 
-    def update(self, ellapsed_time, context):
+    def update(self, context: CrypterContext):
         event = macropad.keys.events.get()
         if event and event.pressed:
             key_number = event.key_number
             if key_number != context.expected_key:
-                return "Failed"
+                return States.failed
 
             context.keycode_index = context.keycode_index + 1
             if (context.keycode_index == len(context.clue_key_colors)):
-                return "Message"
+                return States.message
 
             next_color, next_key = context.clue_key_colors[context.keycode_index]
             context.expected_key = next_key
@@ -186,37 +198,35 @@ class Keycoding(State):
         keypadAnimation.animate()
         macropad.pixels.show()
 
-        return self.name
+        return self
 
 
-state_machine.add_state(Keycoding())
+States.keycoding = Keycoding()
 
 
 class Failed(State):
-    def enter(self, context):
-        context.active_time = 0
+    def enter(self, context: CrypterContext):
         display_group[2].text = 'Unauthorized Access'
         display_group[3].text = 'Detected'
         display_group[5].text = 'Resetting...'
 
         macropad.pixels.brightness = 0.1
 
-    def update(self, ellapsed_time, context):
-        context.active_time += ellapsed_time
-        if (context.active_time > 3):
-            return "Ready"
+    def update(self, context: CrypterContext):
+        if (context.time_active > 3):
+            return States.ready
 
         failedAnimation.animate()
         macropad.pixels.show()
 
-        return self.name
+        return self
 
 
-state_machine.add_state(Failed())
+States.failed = Failed()
 
 
 class Message(State):
-    def _update_message(self, context):
+    def _update_message(self, context: CrypterContext):
         encoder_delta = abs(context.encoder_start -
                             macropad.encoder) % MAX_ENCODER_DISTANCE
         rotated = abs(encoder_delta - context.encoder_offset_desired)
@@ -230,7 +240,7 @@ class Message(State):
         #display_group[5].text = str(rotated)
         display_group[6].text = str(encoder_delta)
 
-    def enter(self, context):
+    def enter(self, context: CrypterContext):
         context.encoder_start = macropad.encoder
         context.encoder_offset_desired = random.randint(
             8, MAX_ENCODER_DISTANCE - 1)
@@ -238,36 +248,34 @@ class Message(State):
         self._update_message(context)
 
         macropad.pixels.brightness = 0.05
-        macropad.pixels.fill(0)
+        macropad.pixels.fill(BLACK)
         macropad.pixels.show()
 
-    def update(self, ellapsed_time, context):
+    def update(self, context: CrypterContext):
         self._update_message(context)
 
         event = macropad.keys.events.get()
         if event and event.pressed:
-            return "Ready"
+            return States.ready
 
         messageAnimation.animate()
         macropad.pixels.show()
 
-        return self.name
+        return self
 
 
-state_machine.add_state(Message())
+States.message = Message()
+
 
 # MAIN LOOP
 
-state_machine.go_to_state("Booting", global_state)
+global_state = CrypterContext()
+state_machine = StateMachine()
+state_machine.go_to_state(States.booting, global_state)
 
-last_update = time.monotonic()
 
 while True:
-    current_time = time.monotonic()
-    ellapsed_time = current_time - last_update
-    last_update = current_time
-
-    state_machine.update(global_state, ellapsed_time)
+    state_machine.update(global_state)
 
     macropad.display.show(display_group)
     macropad.display.refresh()
