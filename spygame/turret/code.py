@@ -41,7 +41,7 @@ buttonB = DigitalInOut(board.BUTTON_B)
 buttonB.direction = Direction.INPUT
 buttonB.pull = Pull.DOWN
 
-pixels = NeoPixel(board.NEOPIXEL, 10, auto_write=False, brightness=0.01)
+pixels = NeoPixel(board.NEOPIXEL, 10, auto_write=False, brightness=0.1)
 
 pulse_in = pulseio.PulseIn(board.RX, maxlen=120, idle_state=True)
 pulse_in.clear()
@@ -65,9 +65,8 @@ class TurretContext(StateContext):
 
         # Turret threat tracking
         self.active_time_remaining = 0
-        self.hit_point_max = random.randint(
-            config.HIT_POINT_MIN, config.HIT_POINT_MAX)
-        self.hit_points = self.hit_point_max
+        self.hit_point_max = 0
+        self.hit_points = 0
         self.shoot_delay = 0
         self.shots_to_take = 0
         self.shot_charge = 0
@@ -117,7 +116,11 @@ States.configure = Configure()
 
 
 class Countdown(State):
-    def enter(self, context: TurretContext):
+    def enter(self, context: TurretContext):        
+        context.hit_point_max = random.randint(
+            config.HIT_POINT_MIN, config.HIT_POINT_MAX)
+        context.hit_points = context.hit_point_max
+
         pixels.fill(0)
         pixels.show()
 
@@ -228,6 +231,7 @@ class Shoot(State):
         pulse_out.send(pulses)
 
         pulse_in.resume()
+        pulse_in.clear()
 
         return States.active
 
@@ -260,6 +264,9 @@ class Neutralized(State):
         pixels.show()
 
     def update(self, context: TurretContext):
+        if not switch.value:
+            return States.configure
+        
         neutralizedAnimation.animate()
         pixels.show()
 
