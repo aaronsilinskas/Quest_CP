@@ -2,24 +2,31 @@
 
 """
 Laser Turret - Capture IR data to button A or B, then play it back in transmit mode
-Switch off - Receive - captures IR raw data and assign the pulses to button A or B (whichever is held down)
-Switch On - Transmit - transmits captured IR data when the A or B button is pressed
-- Button - transmit the last IR data 
+Switch Off - Configuration mode (currently no functions)
+Switch On - Start countdown to enter Sentry mode
+
+States:
+Sentry - Waits to be hit before switching to Active
+Active - Shoot one or more times with random delays. Green LEDs indicate hit points remaining
+Neutralized - When hit points is reduced to 0, the turret is out of the game until the switch is toggled or power is cycled 
 """
 
 import pulseio
 import pwmio
 import board
 import array
+import random
 from digitalio import DigitalInOut, Direction, Pull
+from simpleio import map_range
 from neopixel import NeoPixel
 from adafruit_irremote import GenericDecode
 from adafruit_led_animation.animation.comet import Comet
+from adafruit_led_animation.animation.sparklepulse import SparklePulse
 
 from state import StateContext, State, StateMachine
 
 # CONFIGURATION
-from config import COLOR_COUNTDOWN, COLOR_SENTRY
+import config
 
 # HARDWARE INITIALIZATION
 switch = DigitalInOut(board.SLIDE_SWITCH)
@@ -37,22 +44,50 @@ buttonB.pull = Pull.DOWN
 pixels = NeoPixel(board.NEOPIXEL, 10, auto_write=False, brightness=0.01)
 
 pulse_in = pulseio.PulseIn(board.RX, maxlen=120, idle_state=True)
+pulse_in.clear()
 ir_decoder = GenericDecode()
 
 pwm_out = pwmio.PWMOut(board.TX, frequency=38000, duty_cycle=2 ** 15)
 pulse_out = pulseio.PulseOut(pwm_out)
 
 # ANIMATIONS
-sentryAnimation = Comet(pixels, 0.1, COLOR_SENTRY, tail_length=4, bounce=True)
+sentryAnimation = Comet(pixels, 0.1, config.COLOR_SENTRY,
+                        tail_length=4, bounce=True)
+neutralizedAnimation = SparklePulse(
+    pixels, 0.01, config.COLOR_NEUTRALIZED, period=0.5, min_intensity=0, max_intensity=0.1)
 
 # STATE MACHINE
+
 
 class TurretContext(StateContext):
     def __init__(self):
         super().__init__()
 
         # Turret threat tracking
-        self.threat_level = 0
+        self.active_time_remaining = 0
+        self.hit_point_max = random.randint(
+            config.HIT_POINT_MIN, config.HIT_POINT_MAX)
+        self.hit_points = self.hit_point_max
+        self.shoot_delay = 0
+        self.shots_to_take = 0
+        self.shot_charge = 0
+
+
+def check_hit(context: TurretContext):
+    pulses = ir_decoder.read_pulses(pulse_in, max_pulse=10000, blocking=False)
+    # TODO will need to compare each pulse to within a threshold of the target value, can't just compare the values
+    if pulses:
+        print(pulses)
+        return True
+
+    return False
+
+
+def fill_pixel_range(x, x_min, x_max, color):
+    pixels_on = map_range(x, x_min, x_max, 0, pixels.n)
+    pixels.fill(0)
+    for i in range(0, pixels_on):
+        pixels[i] = color
 
 
 class States:
@@ -60,9 +95,11 @@ class States:
     countdown: State
     sentry: State
     active: State
+    charge_shot: State
     shoot: State
     hit: State
-    disabled: State
+    neutralized: State
+
 
 class Configure(State):
     def enter(self, context: TurretContext):
@@ -75,7 +112,9 @@ class Configure(State):
 
         return self
 
+
 States.configure = Configure()
+
 
 class Countdown(State):
     def enter(self, context: TurretContext):
@@ -85,16 +124,18 @@ class Countdown(State):
     def update(self, context: TurretContext):
         if not switch.value:
             return States.configure
-        if context.time_active >= 11:
+        if int(context.time_active) > config.COUNTDOWN_SECONDS:
             return States.sentry
 
-        for i in range(0, int(context.time_active)):
-            pixels[i] = COLOR_COUNTDOWN
+        fill_pixel_range(context.time_active, 0,
+                         config.COUNTDOWN_SECONDS, config.COLOR_COUNTDOWN)
         pixels.show()
 
         return self
 
+
 States.countdown = Countdown()
+
 
 class Sentry(State):
     def enter(self, context: TurretContext):
@@ -102,71 +143,131 @@ class Sentry(State):
         pixels.show()
 
     def update(self, context: TurretContext):
+        if not switch.value:
+            return States.configure
+
+        if check_hit(context):
+            return States.hit
 
         sentryAnimation.animate()
         pixels.show()
 
         return self
 
+
 States.sentry = Sentry()
 
-# class Receive(State):
-#     def update(self, context: IRCopierContext):
-#         if switch.value:
-#             return States.transmit
 
-#         pulses = ir_decoder.read_pulses(
-#             pulse_in, max_pulse=10000, blocking=False)
-#         if pulses:
-#             pulseArray = array.array("H", pulses)
-#             print("Pulses received:")
-#             print(pulseArray)
+class Active(State):
+    def update(self, context: TurretContext):
+        if not switch.value:
+            return States.configure
 
-#             if buttonA.value == 1:
-#                 context.button_a_pulses = pulseArray
-#                 print("Assigned to Button A")
-#             if buttonB.value == 1:
-#                 context.button_b_pulses = pulseArray
-#                 print("Assigned to Button B")
+        context.active_time_remaining -= context.time_ellapsed
+        if context.active_time_remaining <= 0:
+            return States.sentry
 
-#         return self
+        if check_hit(context):
+            return States.hit
 
+        if context.shots_to_take > 0:
+            context.shots_to_take -= 1
+            return States.charge_shot
+        elif context.shoot_delay > 0:
+            context.shoot_delay -= context.time_ellapsed
+            if context.shoot_delay <= 0:
+                context.shots_to_take = random.randint(
+                    0, config.MAX_SHOT_BURST)
+                return States.charge_shot
+        else:
+            context.shoot_delay = random.randint(
+                config.SHOOT_DELAY_MIN, config.SHOOT_DELAY_MAX)
 
-# States.receive = Receive()
+        fill_pixel_range(context.hit_points, 0,
+                         context.hit_point_max, config.COLOR_HITPOINTS)
+        pixels.show()
 
-
-# class Transmit(State):
-#     def _send_pulses(self, pulses):
-#         if not pulses:
-#             print("No pulses recorded")
-#             return
-
-#         pulse_in.pause()
-#         print("Sending pulses")
-#         print(pulses)
-#         pulse_out.send(pulses)
-
-#         pulse_in.resume()
-
-#     def update(self, context: IRCopierContext):
-#         if not switch.value:
-#             return States.receive
-
-#         if buttonA.value == 1:
-#             self._send_pulses(context.button_a_pulses)
-
-#             while (buttonA.value == 1):
-#                 True
-#         elif buttonB.value == 1:
-#             self._send_pulses(context.button_b_pulses)
-
-#             while (buttonB.value == 1):
-#                 True
-
-#         return self
+        return self
 
 
-# States.transmit = Transmit()
+States.active = Active()
+
+
+class ChargeShot(State):
+    def enter(self, context: TurretContext):
+        print("Charging shot")
+        context.shot_charge = 0
+        pass
+
+    def update(self, context: TurretContext):
+        context.shot_charge += context.time_ellapsed
+        if context.shot_charge > config.SHOT_CHARGE_TIME:
+            return States.shoot
+
+        fill_pixel_range(context.shot_charge, 0,
+                         config.SHOT_CHARGE_TIME, config.COLOR_SHOT_CHARGE)
+        pixels.show()
+
+        return self
+
+
+States.charge_shot = ChargeShot()
+
+
+class Shoot(State):
+    def enter(self, context: TurretContext):
+        print("Shooting!")
+
+    def update(self, context: TurretContext):
+        pixels.fill(config.COLOR_SHOOTING)
+        pixels.show()
+
+        pulse_in.pause()
+        pulses = array.array("H", config.IR_PULSE_SHOOT)
+        print(pulses)
+        pulse_out.send(pulses)
+
+        pulse_in.resume()
+
+        return States.active
+
+
+States.shoot = Shoot()
+
+
+class Hit(State):
+    def enter(self, context: TurretContext):
+        context.hit_points -= 1
+        context.active_time_remaining = random.randint(
+            config.ACTIVE_TIME_MIN, config.ACTIVE_TIME_MAX)
+        print("Hit! ", context.hit_points)
+
+    def update(self, context: TurretContext):
+        if context.hit_points <= 0:
+            return States.neutralized
+
+        context.threat_level = 2
+        return States.active
+
+
+States.hit = Hit()
+
+
+class Neutralized(State):
+    def enter(self, context: TurretContext):
+        print("Disabled!")
+        pixels.fill(0)
+        pixels.show()
+
+    def update(self, context: TurretContext):
+        neutralizedAnimation.animate()
+        pixels.show()
+
+        return self
+
+
+States.neutralized = Neutralized()
+
 
 # MAIN LOOP
 state_context = TurretContext()
