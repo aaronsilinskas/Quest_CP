@@ -33,13 +33,13 @@ switch = DigitalInOut(board.SLIDE_SWITCH)
 switch.direction = Direction.INPUT
 switch.pull = Pull.UP
 
-buttonA = DigitalInOut(board.BUTTON_A)
-buttonA.direction = Direction.INPUT
-buttonA.pull = Pull.DOWN
+button_a = DigitalInOut(board.BUTTON_A)
+button_a.direction = Direction.INPUT
+button_a.pull = Pull.DOWN
 
-buttonB = DigitalInOut(board.BUTTON_B)
-buttonB.direction = Direction.INPUT
-buttonB.pull = Pull.DOWN
+button_b = DigitalInOut(board.BUTTON_B)
+button_b.direction = Direction.INPUT
+button_b.pull = Pull.DOWN
 
 pixels = NeoPixel(board.NEOPIXEL, 10, auto_write=False, brightness=0.1)
 
@@ -51,9 +51,9 @@ pwm_out = pwmio.PWMOut(board.TX, frequency=38000, duty_cycle=2 ** 15)
 pulse_out = pulseio.PulseOut(pwm_out)
 
 # ANIMATIONS
-sentryAnimation = Comet(pixels, 0.1, config.COLOR_SENTRY,
-                        tail_length=4, bounce=True)
-neutralizedAnimation = SparklePulse(
+sentry_animation = Comet(pixels, 0.1, config.COLOR_SENTRY,
+                         tail_length=4, bounce=True)
+neutralized_animation = SparklePulse(
     pixels, 0.01, config.COLOR_NEUTRALIZED, period=0.5, min_intensity=0, max_intensity=0.1)
 
 # STATE MACHINE
@@ -74,9 +74,15 @@ class TurretContext(StateContext):
 
 def check_hit(context: TurretContext):
     pulses = ir_decoder.read_pulses(pulse_in, max_pulse=10000, blocking=False)
-    # TODO will need to compare each pulse to within a threshold of the target value, can't just compare the values
     if pulses:
-        print(pulses)
+        print("Pulses: ", pulses)
+        if len(pulses) != len(config.IR_PULSE_HIT):
+            return False
+        for expected_pulse in config.IR_PULSE_HIT:
+            pulse_delta = abs(expected_pulse - pulses.pop(0))
+            if pulse_delta > 150:
+                return False
+
         return True
 
     return False
@@ -116,7 +122,7 @@ States.configure = Configure()
 
 
 class Countdown(State):
-    def enter(self, context: TurretContext):        
+    def enter(self, context: TurretContext):
         context.hit_point_max = random.randint(
             config.HIT_POINT_MIN, config.HIT_POINT_MAX)
         context.hit_points = context.hit_point_max
@@ -152,7 +158,7 @@ class Sentry(State):
         if check_hit(context):
             return States.hit
 
-        sentryAnimation.animate()
+        sentry_animation.animate()
         pixels.show()
 
         return self
@@ -266,8 +272,8 @@ class Neutralized(State):
     def update(self, context: TurretContext):
         if not switch.value:
             return States.configure
-        
-        neutralizedAnimation.animate()
+
+        neutralized_animation.animate()
         pixels.show()
 
         return self
