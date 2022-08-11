@@ -41,7 +41,7 @@ button_b = DigitalInOut(board.BUTTON_B)
 button_b.direction = Direction.INPUT
 button_b.pull = Pull.DOWN
 
-pixels = NeoPixel(board.NEOPIXEL, 10, auto_write=False, brightness=0.1)
+pixels = NeoPixel(board.NEOPIXEL, 10, auto_write=False, brightness=0.05)
 
 pulse_in = pulseio.PulseIn(board.RX, maxlen=120, idle_state=True)
 pulse_in.clear()
@@ -51,7 +51,7 @@ pwm_out = pwmio.PWMOut(board.TX, frequency=38000, duty_cycle=2 ** 15)
 pulse_out = pulseio.PulseOut(pwm_out)
 
 # ANIMATIONS
-sentry_animation = Comet(pixels, 0.1, config.COLOR_SENTRY,
+sentry_animation = Comet(pixels, speed=0.1, color=config.WHITE,
                          tail_length=4, bounce=True)
 neutralized_animation = SparklePulse(
     pixels, 0.01, config.COLOR_NEUTRALIZED, period=0.5, min_intensity=0, max_intensity=0.1)
@@ -71,14 +71,23 @@ class TurretContext(StateContext):
         self.shots_to_take = 0
         self.shot_charge = 0
 
+        # Team
+        self.setup_team(config.STARTING_TEAM)
+
+    def setup_team(self, team):
+        self.team = team
+        self.team_color = config.TEAM_1_COLOR if self.team == 1 else config.TEAM_2_COLOR
+        self.shoot_pulse = config.TEAM_1_SHOOT_PULSE if self.team == 1 else config.TEAM_2_SHOOT_PULSE
+        self.hit_pulse = config.TEAM_2_SHOOT_PULSE if self.team == 1 else config.TEAM_1_SHOOT_PULSE
+
 
 def check_hit(context: TurretContext):
     pulses = ir_decoder.read_pulses(pulse_in, max_pulse=10000, blocking=False)
     if pulses:
         print("Pulses: ", pulses)
-        if len(pulses) != len(config.IR_PULSE_HIT):
+        if len(pulses) != len(context.hit_pulse):
             return False
-        for expected_pulse in config.IR_PULSE_HIT:
+        for expected_pulse in context.hit_pulse:
             pulse_delta = abs(expected_pulse - pulses.pop(0))
             if pulse_delta > 150:
                 return False
@@ -148,7 +157,7 @@ class Countdown(State):
             return States.sentry
 
         fill_pixel_range(context.time_active, 0,
-                         config.COUNTDOWN_SECONDS, config.COLOR_COUNTDOWN)
+                         config.COUNTDOWN_SECONDS, context.team_color)
         pixels.show()
 
         return self
@@ -159,6 +168,8 @@ States.countdown = Countdown()
 
 class Sentry(State):
     def enter(self, context: TurretContext):
+        sentry_animation.color = context.team_color
+
         pixels.fill(0)
         pixels.show()
 
@@ -243,7 +254,7 @@ class Shoot(State):
         pixels.show()
 
         pulse_in.pause()
-        pulses = array.array("H", config.IR_PULSE_SHOOT)
+        pulses = array.array("H", context.shoot_pulse)
         print(pulses)
         pulse_out.send(pulses)
 
