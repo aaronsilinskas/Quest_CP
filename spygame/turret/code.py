@@ -115,6 +115,17 @@ class Configure(State):
         if switch.value:
             return States.countdown
 
+        pulses = ir_decoder.read_pulses(
+            pulse_in, max_pulse=10000, blocking=False)
+        if pulses:
+            print("Pulses: ", pulses)
+            print("Rounded: [", end="")
+            for idx, pulse in enumerate(pulses):
+                end = ", " if idx < len(pulses) - 1 else ""
+                print(int(round(pulse / 100)) * 100, end=end)
+            print("]")
+            print()
+
         return self
 
 
