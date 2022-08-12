@@ -51,6 +51,8 @@ pwm_out = pwmio.PWMOut(board.TX, frequency=38000, duty_cycle=2 ** 15)
 pulse_out = pulseio.PulseOut(pwm_out)
 
 # ANIMATIONS
+configure_animation = Comet(
+    pixels, speed=0.2, color=config.WHITE, tail_length=7, bounce=True)
 sentry_animation = Comet(pixels, speed=0.1, color=config.WHITE,
                          tail_length=4, bounce=True)
 neutralized_animation = SparklePulse(
@@ -76,25 +78,39 @@ class TurretContext(StateContext):
 
     def setup_team(self, team):
         self.team = team
-        self.team_color = config.TEAM_1_COLOR if self.team == 1 else config.TEAM_2_COLOR
-        self.shoot_pulse = config.TEAM_1_SHOOT_PULSE if self.team == 1 else config.TEAM_2_SHOOT_PULSE
-        self.hit_pulse = config.TEAM_2_SHOOT_PULSE if self.team == 1 else config.TEAM_1_SHOOT_PULSE
+        if self.team == 1:
+            self.team_color = config.TEAM_1_COLOR
+            self.shoot_pulse = config.TEAM_1_SHOOT_PULSE
+            self.hit_pulse = config.TEAM_2_SHOOT_PULSE
+        elif self.team == 2:
+            self.team_color = config.TEAM_2_COLOR
+            self.shoot_pulse = config.TEAM_2_SHOOT_PULSE
+            self.hit_pulse = config.TEAM_1_SHOOT_PULSE
+        else:
+            self.team_color = config.WHITE
+            self.shoot_pulse = []
+            self.hit_pulse = []
 
 
-def check_hit(context: TurretContext):
+def randfloat(start, end):
+    return (end - start) * random.random() + start
+
+
+def check_pulses(context: TurretContext):
     pulses = ir_decoder.read_pulses(pulse_in, max_pulse=10000, blocking=False)
     if pulses:
         print("Pulses: ", pulses)
         if len(pulses) != len(context.hit_pulse):
-            return False
+            return States.active
+
         for expected_pulse in context.hit_pulse:
             pulse_delta = abs(expected_pulse - pulses.pop(0))
             if pulse_delta > 150:
-                return False
+                return States.active
 
-        return True
+        return States.hit
 
-    return False
+    return None
 
 
 def fill_pixel_range(x, x_min, x_max, color):
@@ -113,6 +129,7 @@ class States:
     shoot: State
     hit: State
     neutralized: State
+    capturing: State
 
 
 class Configure(State):
@@ -135,6 +152,17 @@ class Configure(State):
             print("]")
             print()
 
+        if button_a.value:
+            next_team = context.team + 1 if context.team < 2 else 0
+            context.setup_team(next_team)
+            configure_animation.color = context.team_color
+
+            while button_a.value:
+                True
+
+        configure_animation.animate()
+        pixels.show()
+
         return self
 
 
@@ -154,6 +182,8 @@ class Countdown(State):
         if not switch.value:
             return States.configure
         if int(context.time_active) > config.COUNTDOWN_SECONDS:
+            if (context.team == 0):
+                return States.neutralized
             return States.sentry
 
         fill_pixel_range(context.time_active, 0,
@@ -177,8 +207,9 @@ class Sentry(State):
         if not switch.value:
             return States.configure
 
-        if check_hit(context):
-            return States.hit
+        pulses_state = check_pulses(context)
+        if pulses_state:
+            return pulses_state
 
         sentry_animation.animate()
         pixels.show()
@@ -190,6 +221,12 @@ States.sentry = Sentry()
 
 
 class Active(State):
+    def enter(self, context: TurretContext):
+        if context.active_time_remaining <= 0:
+            print("Resetting active time")
+            context.active_time_remaining = randfloat(
+                config.ACTIVE_TIME_MIN, config.ACTIVE_TIME_MAX)
+
     def update(self, context: TurretContext):
         if not switch.value:
             return States.configure
@@ -197,9 +234,6 @@ class Active(State):
         context.active_time_remaining -= context.time_ellapsed
         if context.active_time_remaining <= 0:
             return States.sentry
-
-        if check_hit(context):
-            return States.hit
 
         if context.shots_to_take > 0:
             context.shots_to_take -= 1
@@ -211,8 +245,12 @@ class Active(State):
                     0, config.MAX_SHOT_BURST)
                 return States.charge_shot
         else:
-            context.shoot_delay = random.randint(
+            context.shoot_delay = randfloat(
                 config.SHOOT_DELAY_MIN, config.SHOOT_DELAY_MAX)
+
+        pulses_state = check_pulses(context)
+        if pulses_state:
+            return pulses_state
 
         fill_pixel_range(context.hit_points, 0,
                          context.hit_point_max, config.COLOR_HITPOINTS)
@@ -270,15 +308,13 @@ States.shoot = Shoot()
 class Hit(State):
     def enter(self, context: TurretContext):
         context.hit_points -= 1
-        context.active_time_remaining = random.randint(
-            config.ACTIVE_TIME_MIN, config.ACTIVE_TIME_MAX)
         print("Hit! ", context.hit_points)
 
     def update(self, context: TurretContext):
         if context.hit_points <= 0:
             return States.neutralized
 
-        context.threat_level = 2
+        context.active_time_remaining = 0  # causes a refresh on active time
         return States.active
 
 
@@ -287,13 +323,16 @@ States.hit = Hit()
 
 class Neutralized(State):
     def enter(self, context: TurretContext):
-        print("Disabled!")
+        print("Neutralized!")
         pixels.fill(0)
         pixels.show()
 
     def update(self, context: TurretContext):
         if not switch.value:
             return States.configure
+
+        if button_a.value or button_b.value:
+            return States.capturing
 
         neutralized_animation.animate()
         pixels.show()
@@ -302,6 +341,40 @@ class Neutralized(State):
 
 
 States.neutralized = Neutralized()
+
+
+class Capturing(State):
+    def _button_team(self):
+        if button_a.value:
+            return 1
+        if button_b.value:
+            return 2
+        return 0
+
+    def enter(self, context: TurretContext):
+        context.setup_team(self._button_team())
+
+        pixels.fill(0)
+        pixels.show()
+
+    def update(self, context: TurretContext):
+        current_team = self._button_team()
+        if current_team != context.team or current_team == 0:
+            return States.neutralized
+
+        if int(context.time_active) > config.CAPTURE_SECONDS:
+            print("Captured: ", context.team)
+            context.setup_team(context.team)
+            return States.sentry
+
+        fill_pixel_range(context.time_active, 0,
+                         config.CAPTURE_SECONDS, context.team_color)
+        pixels.show()
+
+        return self
+
+
+States.capturing = Capturing()
 
 
 # MAIN LOOP
