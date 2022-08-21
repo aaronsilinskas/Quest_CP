@@ -19,6 +19,14 @@ import random
 from digitalio import DigitalInOut, Direction, Pull
 from simpleio import map_range
 from neopixel import NeoPixel
+from audiocore import WaveFile
+try:
+    from audioio import AudioOut
+except ImportError:
+    try:
+        from audiopwmio import PWMAudioOut as AudioOut
+    except ImportError:
+        pass  # not always supported by every board!
 from adafruit_irremote import GenericDecode
 from adafruit_led_animation.animation.comet import Comet
 from adafruit_led_animation.animation.sparklepulse import SparklePulse
@@ -42,6 +50,11 @@ button_b.direction = Direction.INPUT
 button_b.pull = Pull.DOWN
 
 pixels = NeoPixel(board.NEOPIXEL, 10, auto_write=False, brightness=0.05)
+
+audio = AudioOut(board.AUDIO)
+speaker_enable = DigitalInOut(board.SPEAKER_ENABLE)
+speaker_enable.direction = Direction.OUTPUT
+speaker_enable.value = config.SOUND_ENABLED
 
 pulse_in = pulseio.PulseIn(board.RX, maxlen=120, idle_state=True)
 pulse_in.clear()
@@ -100,6 +113,9 @@ def check_pulses(context: TurretContext):
     pulses = ir_decoder.read_pulses(pulse_in, max_pulse=10000, blocking=False)
     if pulses:
         print("Pulses: ", pulses)
+        if len(pulses) < 2:
+            return None
+
         if len(pulses) != len(context.hit_pulse):
             return States.active
 
@@ -114,10 +130,32 @@ def check_pulses(context: TurretContext):
 
 
 def fill_pixel_range(x, x_min, x_max, color):
-    pixels_on = map_range(x, x_min, x_max, 0, pixels.n)
+    pixels_on = int(map_range(x, x_min, x_max, 0, pixels.n))
     pixels.fill(0)
     for i in range(0, pixels_on):
         pixels[i] = color
+
+    return pixels_on
+
+
+last_sound_file = None
+last_wave = None
+
+
+def play_sound(sound_file):
+    if not config.SOUND_ENABLED:
+        return
+
+    global last_sound_file
+    global last_wave
+
+    if sound_file != last_sound_file:
+        print("Loading wave file: ", sound_file)
+        last_sound_file = sound_file
+        wave_file = open(sound_file, "rb")
+        last_wave = WaveFile(wave_file)
+    print("Playing wave file: ", sound_file)
+    audio.play(last_wave)
 
 
 class States:
@@ -158,6 +196,13 @@ class Configure(State):
             configure_animation.color = context.team_color
 
             while button_a.value:
+                True
+        if button_b.value:
+            print("Test")
+
+            # add test code here
+
+            while button_b.value:
                 True
 
         configure_animation.animate()
@@ -265,6 +310,8 @@ States.active = Active()
 class ChargeShot(State):
     def enter(self, context: TurretContext):
         print("Charging shot")
+        play_sound("sounds\charging.wav")
+
         context.shot_charge = 0
         pass
 
@@ -299,6 +346,10 @@ class Shoot(State):
         pulse_in.resume()
         pulse_in.clear()
 
+        play_sound("sounds\shoot.wav")
+        while audio.playing:
+            True
+
         return States.active
 
 
@@ -309,6 +360,7 @@ class Hit(State):
     def enter(self, context: TurretContext):
         context.hit_points -= 1
         print("Hit! ", context.hit_points)
+        play_sound("sounds\hit.wav")
 
     def update(self, context: TurretContext):
         if context.hit_points <= 0:
