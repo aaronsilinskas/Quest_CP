@@ -90,16 +90,23 @@ class TurretContext(StateContext):
     def __init__(self):
         super().__init__()
 
+        self.reset(config.STARTING_TEAM)
+
+    def reset(self, team):
         # Turret threat tracking
         self.active_time_remaining = 0
-        self.hit_point_max = 0
-        self.hit_points = 0
         self.shoot_delay = 0
         self.shots_to_take = 0
         self.shot_charge = 0
 
+        # Hit points
+        self.hit_point_max = random.randint(
+            config.HIT_POINT_MIN, config.HIT_POINT_MAX)
+        self.hit_points = self.hit_point_max
+        print("Hit points reset: ", self. hit_points)
+
         # Team
-        self.setup_team(config.STARTING_TEAM)
+        self.setup_team(team)
 
     def setup_team(self, team):
         self.team = team
@@ -120,8 +127,10 @@ class TurretContext(StateContext):
 def configure_mode():
     return switch.value ^ switch_external.value
 
+
 def team_1_button_down():
     return button_a.value or button_a_external.value
+
 
 def team_2_button_down():
     return button_b.value or button_b_external.value
@@ -131,17 +140,17 @@ def randfloat(start, end):
     return (end - start) * random.random() + start
 
 
-def check_pulses(context: TurretContext):
+def check_pulses(hit_pulse):
     pulses = ir_decoder.read_pulses(pulse_in, max_pulse=10000, blocking=False)
     if pulses:
         print("Pulses: ", pulses)
         if len(pulses) < 2:
             return None
 
-        if len(pulses) != len(context.hit_pulse):
+        if len(pulses) != len(hit_pulse):
             return States.active
 
-        for expected_pulse in context.hit_pulse:
+        for expected_pulse in hit_pulse:
             pulse_delta = abs(expected_pulse - pulses.pop(0))
             if pulse_delta > 150:
                 return States.active
@@ -239,9 +248,8 @@ States.configure = Configure()
 
 class Countdown(State):
     def enter(self, context: TurretContext):
-        context.hit_point_max = random.randint(
-            config.HIT_POINT_MIN, config.HIT_POINT_MAX)
-        context.hit_points = context.hit_point_max
+        context.reset(context.team)
+
         context.next_sound_pixel_count = 0
 
         pixels.fill(0)
@@ -283,7 +291,7 @@ class Sentry(State):
         if configure_mode():
             return States.configure
 
-        pulses_state = check_pulses(context)
+        pulses_state = check_pulses(context.hit_pulse)
         if pulses_state:
             return pulses_state
 
@@ -321,7 +329,7 @@ class Active(State):
             context.shoot_delay = randfloat(
                 config.SHOOT_DELAY_MIN, config.SHOOT_DELAY_MAX)
 
-        pulses_state = check_pulses(context)
+        pulses_state = check_pulses(context.hit_pulse)
         if pulses_state:
             return pulses_state
 
@@ -441,7 +449,7 @@ class Capturing(State):
 
         if int(context.time_active) > config.CAPTURE_SECONDS:
             print("Captured: ", context.team)
-            context.setup_team(context.team)
+            context.reset(context.team)
             return States.sentry
 
         fill_pixel_range(context.time_active, 0,
