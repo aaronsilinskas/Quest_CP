@@ -192,6 +192,7 @@ class Configure(State):
 
         if button_a.value:
             next_team = context.team + 1 if context.team < 2 else 0
+            print("Starting team: ", next_team)
             context.setup_team(next_team)
             configure_animation.color = context.team_color
 
@@ -219,6 +220,7 @@ class Countdown(State):
         context.hit_point_max = random.randint(
             config.HIT_POINT_MIN, config.HIT_POINT_MAX)
         context.hit_points = context.hit_point_max
+        context.next_sound_pixel_count = 0
 
         pixels.fill(0)
         pixels.show()
@@ -226,13 +228,20 @@ class Countdown(State):
     def update(self, context: TurretContext):
         if not switch.value:
             return States.configure
-        if int(context.time_active) > config.COUNTDOWN_SECONDS:
+
+        if int(context.time_active) == config.COUNTDOWN_SECONDS:
+            play_sound("sounds\countdown-done.wav")
             if (context.team == 0):
                 return States.neutralized
             return States.sentry
 
-        fill_pixel_range(context.time_active, 0,
-                         config.COUNTDOWN_SECONDS, context.team_color)
+        current_pixels = fill_pixel_range(context.time_active, 0,
+                                          config.COUNTDOWN_SECONDS, context.team_color)
+
+        if current_pixels >= context.next_sound_pixel_count:
+            play_sound("sounds\countdown-tick.wav")
+            context.next_sound_pixel_count = current_pixels + 2
+
         pixels.show()
 
         return self
