@@ -40,14 +40,26 @@ import config
 switch = DigitalInOut(board.SLIDE_SWITCH)
 switch.direction = Direction.INPUT
 switch.pull = Pull.UP
+# Optional external switch on pin A1
+switch_external = DigitalInOut(board.A1)
+switch_external.direction = Direction.INPUT
+switch_external.pull = Pull.UP
 
 button_a = DigitalInOut(board.BUTTON_A)
 button_a.direction = Direction.INPUT
 button_a.pull = Pull.DOWN
+# Optional external button A on pin A2
+button_a_external = DigitalInOut(board.A2)
+button_a_external.direction = Direction.INPUT
+button_a_external.pull = Pull.DOWN
 
 button_b = DigitalInOut(board.BUTTON_B)
 button_b.direction = Direction.INPUT
 button_b.pull = Pull.DOWN
+# Optional external button B on pin A3
+button_b_external = DigitalInOut(board.A3)
+button_b_external.direction = Direction.INPUT
+button_b_external.pull = Pull.DOWN
 
 pixels = NeoPixel(board.NEOPIXEL, 10, auto_write=False, brightness=0.05)
 
@@ -103,6 +115,16 @@ class TurretContext(StateContext):
             self.team_color = config.WHITE
             self.shoot_pulse = []
             self.hit_pulse = []
+
+
+def configure_mode():
+    return switch.value ^ switch_external.value
+
+def team_1_button_down():
+    return button_a.value or button_a_external.value
+
+def team_2_button_down():
+    return button_b.value or button_b_external.value
 
 
 def randfloat(start, end):
@@ -176,7 +198,7 @@ class Configure(State):
         pixels.show()
 
     def update(self, context: TurretContext):
-        if switch.value:
+        if not configure_mode():
             return States.countdown
 
         pulses = ir_decoder.read_pulses(
@@ -190,20 +212,20 @@ class Configure(State):
             print("]")
             print()
 
-        if button_a.value:
+        if team_1_button_down():
             next_team = context.team + 1 if context.team < 2 else 0
             print("Starting team: ", next_team)
             context.setup_team(next_team)
             configure_animation.color = context.team_color
 
-            while button_a.value:
+            while team_1_button_down():
                 True
-        if button_b.value:
+        if team_2_button_down():
             print("Test")
 
             # add test code here
 
-            while button_b.value:
+            while team_2_button_down():
                 True
 
         configure_animation.animate()
@@ -226,7 +248,7 @@ class Countdown(State):
         pixels.show()
 
     def update(self, context: TurretContext):
-        if not switch.value:
+        if configure_mode():
             return States.configure
 
         if int(context.time_active) == config.COUNTDOWN_SECONDS:
@@ -258,7 +280,7 @@ class Sentry(State):
         pixels.show()
 
     def update(self, context: TurretContext):
-        if not switch.value:
+        if configure_mode():
             return States.configure
 
         pulses_state = check_pulses(context)
@@ -282,9 +304,6 @@ class Active(State):
                 config.ACTIVE_TIME_MIN, config.ACTIVE_TIME_MAX)
 
     def update(self, context: TurretContext):
-        if not switch.value:
-            return States.configure
-
         context.active_time_remaining -= context.time_ellapsed
         if context.active_time_remaining <= 0:
             return States.sentry
@@ -389,10 +408,7 @@ class Neutralized(State):
         pixels.show()
 
     def update(self, context: TurretContext):
-        if not switch.value:
-            return States.configure
-
-        if button_a.value or button_b.value:
+        if team_1_button_down() or team_2_button_down():
             return States.capturing
 
         neutralized_animation.animate()
@@ -406,9 +422,9 @@ States.neutralized = Neutralized()
 
 class Capturing(State):
     def _button_team(self):
-        if button_a.value:
+        if team_1_button_down():
             return 1
-        if button_b.value:
+        if team_2_button_down():
             return 2
         return 0
 
@@ -442,10 +458,13 @@ States.capturing = Capturing()
 state_context = TurretContext()
 state_machine = StateMachine()
 
-if switch.value:
-    state_machine.go_to_state(States.countdown, state_context)
-else:
+if configure_mode():
     state_machine.go_to_state(States.configure, state_context)
+else:
+    state_machine.go_to_state(States.countdown, state_context)
 
 while True:
+    if configure_mode() and state_context.state != States.configure:
+        state_machine.go_to_state(States.configure, state_context)
+
     state_machine.update(state_context)
