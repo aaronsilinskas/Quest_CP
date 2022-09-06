@@ -335,6 +335,19 @@ class Active(State):
 
         fill_pixel_range(context.hit_points, 0,
                          context.hit_point_max, config.COLOR_HITPOINTS)
+        if context.hit_points != context.hit_point_max:
+            # Fade last pixel if it's a partial hit point
+            last_pixel = pixels.n * \
+                (context.hit_points / context.hit_point_max)
+
+            partial_hitpoint = last_pixel % 1
+            hp_red = config.COLOR_HITPOINTS >> 16
+            hp_green = (config.COLOR_HITPOINTS >> 8) & 0xFF
+            hp_blue = config.COLOR_HITPOINTS & 0xFF
+
+            pixels[int(last_pixel)] = (hp_red * partial_hitpoint,
+                                       hp_green * partial_hitpoint, hp_blue * partial_hitpoint)
+
         pixels.show()
 
         return self
