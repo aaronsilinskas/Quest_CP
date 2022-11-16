@@ -31,7 +31,7 @@ from adafruit_irremote import GenericDecode
 from adafruit_led_animation.animation.comet import Comet
 from adafruit_led_animation.animation.sparklepulse import SparklePulse
 
-from state import StateContext, State, StateMachine
+from state import Thing, State, StateMachine
 
 # CONFIGURATION
 import config
@@ -86,7 +86,7 @@ neutralized_animation = SparklePulse(
 # STATE MACHINE
 
 
-class TurretContext(StateContext):
+class Turret(Thing):
     def __init__(self):
         super().__init__()
 
@@ -202,11 +202,11 @@ class States:
 
 
 class Configure(State):
-    def enter(self, context: TurretContext):
+    def enter(self, thing: Turret):
         pixels.fill(0)
         pixels.show()
 
-    def update(self, context: TurretContext):
+    def update(self, thing: Turret):
         if not configure_mode():
             return States.countdown
 
@@ -222,10 +222,10 @@ class Configure(State):
             print()
 
         if team_1_button_down():
-            next_team = context.team + 1 if context.team < 2 else 0
+            next_team = thing.team + 1 if thing.team < 2 else 0
             print("Starting team: ", next_team)
-            context.setup_team(next_team)
-            configure_animation.color = context.team_color
+            thing.setup_team(next_team)
+            configure_animation.color = thing.team_color
 
             while team_1_button_down():
                 True
@@ -247,30 +247,30 @@ States.configure = Configure()
 
 
 class Countdown(State):
-    def enter(self, context: TurretContext):
-        context.reset(context.team)
+    def enter(self, thing: Turret):
+        thing.reset(thing.team)
 
-        context.next_sound_pixel_count = 0
+        thing.next_sound_pixel_count = 0
 
         pixels.fill(0)
         pixels.show()
 
-    def update(self, context: TurretContext):
+    def update(self, thing: Turret):
         if configure_mode():
             return States.configure
 
-        if int(context.time_active) == config.COUNTDOWN_SECONDS:
+        if int(thing.time_active) == config.COUNTDOWN_SECONDS:
             play_sound("sounds\countdown-done.wav")
-            if (context.team == 0):
+            if (thing.team == 0):
                 return States.neutralized
             return States.sentry
 
-        current_pixels = fill_pixel_range(context.time_active, 0,
-                                          config.COUNTDOWN_SECONDS, context.team_color)
+        current_pixels = fill_pixel_range(thing.time_active, 0,
+                                          config.COUNTDOWN_SECONDS, thing.team_color)
 
-        if current_pixels >= context.next_sound_pixel_count:
+        if current_pixels >= thing.next_sound_pixel_count:
             play_sound("sounds\countdown-tick.wav")
-            context.next_sound_pixel_count = current_pixels + 2
+            thing.next_sound_pixel_count = current_pixels + 2
 
         pixels.show()
 
@@ -281,17 +281,17 @@ States.countdown = Countdown()
 
 
 class Sentry(State):
-    def enter(self, context: TurretContext):
-        sentry_animation.color = context.team_color
+    def enter(self, thing: Turret):
+        sentry_animation.color = thing.team_color
 
         pixels.fill(0)
         pixels.show()
 
-    def update(self, context: TurretContext):
+    def update(self, thing: Turret):
         if configure_mode():
             return States.configure
 
-        pulses_state = check_pulses(context.hit_pulse)
+        pulses_state = check_pulses(thing.hit_pulse)
         if pulses_state:
             return pulses_state
 
@@ -305,40 +305,40 @@ States.sentry = Sentry()
 
 
 class Active(State):
-    def enter(self, context: TurretContext):
-        if context.active_time_remaining <= 0:
+    def enter(self, thing: Turret):
+        if thing.active_time_remaining <= 0:
             print("Resetting active time")
-            context.active_time_remaining = randfloat(
+            thing.active_time_remaining = randfloat(
                 config.ACTIVE_TIME_MIN, config.ACTIVE_TIME_MAX)
 
-    def update(self, context: TurretContext):
-        context.active_time_remaining -= context.time_ellapsed
-        if context.active_time_remaining <= 0:
+    def update(self, thing: Turret):
+        thing.active_time_remaining -= thing.time_ellapsed
+        if thing.active_time_remaining <= 0:
             return States.sentry
 
-        if context.shots_to_take > 0:
-            context.shots_to_take -= 1
+        if thing.shots_to_take > 0:
+            thing.shots_to_take -= 1
             return States.charge_shot
-        elif context.shoot_delay > 0:
-            context.shoot_delay -= context.time_ellapsed
-            if context.shoot_delay <= 0:
-                context.shots_to_take = random.randint(
+        elif thing.shoot_delay > 0:
+            thing.shoot_delay -= thing.time_ellapsed
+            if thing.shoot_delay <= 0:
+                thing.shots_to_take = random.randint(
                     0, config.MAX_SHOT_BURST)
                 return States.charge_shot
         else:
-            context.shoot_delay = randfloat(
+            thing.shoot_delay = randfloat(
                 config.SHOOT_DELAY_MIN, config.SHOOT_DELAY_MAX)
 
-        pulses_state = check_pulses(context.hit_pulse)
+        pulses_state = check_pulses(thing.hit_pulse)
         if pulses_state:
             return pulses_state
 
-        fill_pixel_range(context.hit_points, 0,
-                         context.hit_point_max, config.COLOR_HITPOINTS)
-        if context.hit_points != context.hit_point_max:
+        fill_pixel_range(thing.hit_points, 0,
+                         thing.hit_point_max, config.COLOR_HITPOINTS)
+        if thing.hit_points != thing.hit_point_max:
             # Fade last pixel if it's a partial hit point
             last_pixel = pixels.n * \
-                (context.hit_points / context.hit_point_max)
+                (thing.hit_points / thing.hit_point_max)
 
             partial_hitpoint = last_pixel % 1
             hp_red = config.COLOR_HITPOINTS >> 16
@@ -357,19 +357,19 @@ States.active = Active()
 
 
 class ChargeShot(State):
-    def enter(self, context: TurretContext):
+    def enter(self, thing: Turret):
         print("Charging shot")
         play_sound("sounds\charging.wav")
 
-        context.shot_charge = 0
+        thing.shot_charge = 0
         pass
 
-    def update(self, context: TurretContext):
-        context.shot_charge += context.time_ellapsed
-        if context.shot_charge > config.SHOT_CHARGE_TIME:
+    def update(self, thing: Turret):
+        thing.shot_charge += thing.time_ellapsed
+        if thing.shot_charge > config.SHOT_CHARGE_TIME:
             return States.shoot
 
-        fill_pixel_range(context.shot_charge, 0,
+        fill_pixel_range(thing.shot_charge, 0,
                          config.SHOT_CHARGE_TIME, config.COLOR_SHOT_CHARGE)
         pixels.show()
 
@@ -380,15 +380,15 @@ States.charge_shot = ChargeShot()
 
 
 class Shoot(State):
-    def enter(self, context: TurretContext):
+    def enter(self, thing: Turret):
         print("Shooting!")
 
-    def update(self, context: TurretContext):
+    def update(self, thing: Turret):
         pixels.fill(config.COLOR_SHOOTING)
         pixels.show()
 
         pulse_in.pause()
-        pulses = array.array("H", context.shoot_pulse)
+        pulses = array.array("H", thing.shoot_pulse)
         print(pulses)
         pulse_out.send(pulses)
 
@@ -406,16 +406,16 @@ States.shoot = Shoot()
 
 
 class Hit(State):
-    def enter(self, context: TurretContext):
-        context.hit_points -= 1
-        print("Hit! ", context.hit_points)
+    def enter(self, thing: Turret):
+        thing.hit_points -= 1
+        print("Hit! ", thing.hit_points)
         play_sound("sounds\hit.wav")
 
-    def update(self, context: TurretContext):
-        if context.hit_points <= 0:
+    def update(self, thing: Turret):
+        if thing.hit_points <= 0:
             return States.neutralized
 
-        context.active_time_remaining = 0  # causes a refresh on active time
+        thing.active_time_remaining = 0  # causes a refresh on active time
         return States.active
 
 
@@ -423,12 +423,12 @@ States.hit = Hit()
 
 
 class Neutralized(State):
-    def enter(self, context: TurretContext):
+    def enter(self, thing: Turret):
         print("Neutralized!")
         pixels.fill(0)
         pixels.show()
 
-    def update(self, context: TurretContext):
+    def update(self, thing: Turret):
         if team_1_button_down() or team_2_button_down():
             return States.capturing
 
@@ -449,24 +449,24 @@ class Capturing(State):
             return 2
         return 0
 
-    def enter(self, context: TurretContext):
-        context.setup_team(self._button_team())
+    def enter(self, thing: Turret):
+        thing.setup_team(self._button_team())
 
         pixels.fill(0)
         pixels.show()
 
-    def update(self, context: TurretContext):
+    def update(self, thing: Turret):
         current_team = self._button_team()
-        if current_team != context.team or current_team == 0:
+        if current_team != thing.team or current_team == 0:
             return States.neutralized
 
-        if int(context.time_active) > config.CAPTURE_SECONDS:
-            print("Captured: ", context.team)
-            context.reset(context.team)
+        if int(thing.time_active) > config.CAPTURE_SECONDS:
+            print("Captured: ", thing.team)
+            thing.reset(thing.team)
             return States.sentry
 
-        fill_pixel_range(context.time_active, 0,
-                         config.CAPTURE_SECONDS, context.team_color)
+        fill_pixel_range(thing.time_active, 0,
+                         config.CAPTURE_SECONDS, thing.team_color)
         pixels.show()
 
         return self
@@ -476,16 +476,16 @@ States.capturing = Capturing()
 
 
 # MAIN LOOP
-state_context = TurretContext()
+turret = Turret()
 state_machine = StateMachine()
 
 if configure_mode():
-    state_machine.go_to_state(States.configure, state_context)
+    state_machine.go_to_state(States.configure, turret)
 else:
-    state_machine.go_to_state(States.countdown, state_context)
+    state_machine.go_to_state(States.countdown, turret)
 
 while True:
-    if configure_mode() and state_context.state != States.configure:
-        state_machine.go_to_state(States.configure, state_context)
+    if configure_mode() and turret.state != States.configure:
+        state_machine.go_to_state(States.configure, turret)
 
-    state_machine.update(state_context)
+    state_machine.update(turret)
