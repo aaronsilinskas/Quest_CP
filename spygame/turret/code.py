@@ -1,5 +1,3 @@
-#
-
 """
 Laser Turret - Capture IR data to button A or B, then play it back in transmit mode
 Switch Off - Configuration mode (currently no functions)
@@ -11,11 +9,11 @@ Active - Shoot one or more times with random delays. Green LEDs indicate hit poi
 Neutralized - When hit points is reduced to 0, the turret is out of the game until the switch is toggled or power is cycled 
 """
 
+import array
+import random
 import pulseio
 import pwmio
 import board
-import array
-import random
 from digitalio import DigitalInOut, Direction, Pull
 from simpleio import map_range
 from neopixel import NeoPixel
@@ -31,7 +29,7 @@ from adafruit_irremote import GenericDecode
 from adafruit_led_animation.animation.comet import Comet
 from adafruit_led_animation.animation.sparklepulse import SparklePulse
 
-from state import Thing, State, StateMachine
+from state import Thing, State, ThingUpdater
 
 # CONFIGURATION
 import config
@@ -477,15 +475,15 @@ States.capturing = Capturing()
 
 # MAIN LOOP
 turret = Turret()
-state_machine = StateMachine()
+thing_updater = ThingUpdater()
 
 if configure_mode():
-    state_machine.go_to_state(States.configure, turret)
+    thing_updater.go_to_state(turret, States.configure)
 else:
-    state_machine.go_to_state(States.countdown, turret)
+    thing_updater.go_to_state(turret, States.countdown)
 
 while True:
     if configure_mode() and turret.state != States.configure:
-        state_machine.go_to_state(States.configure, turret)
+        thing_updater.go_to_state(turret, States.configure)
 
-    state_machine.update(turret)
+    thing_updater.update(turret)

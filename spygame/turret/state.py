@@ -26,7 +26,7 @@ class State:
         return self.name
 
 
-class StateMachine:
+class ThingUpdater:
 
     def __init__(self, disable_logging=False):
         self.disable_logging = disable_logging
@@ -35,7 +35,7 @@ class StateMachine:
         if not self.disable_logging:
             print(message)
 
-    def go_to_state(self, state: State, thing: Thing):
+    def go_to_state(self, thing: Thing, state: State):
         if thing.state:
             self.__log(f"STATE <- {thing.state.name}")
             thing.state.exit(thing)
@@ -58,4 +58,4 @@ class StateMachine:
 
             next_state = thing.state.update(thing)
             if next_state != thing.state:
-                self.go_to_state(next_state, thing)
+                self.go_to_state(thing, next_state)
