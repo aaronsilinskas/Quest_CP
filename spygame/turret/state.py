@@ -4,6 +4,7 @@ import time
 class StateContext(object):
     def __init__(self):
         self.state:State = None
+        self.previous_state:State = None
         self.time_last_update:float = 0
         self.time_ellapsed:float = 0
         self.time_active:float = 0
@@ -36,6 +37,7 @@ class StateMachine(object):
         if context.state:
             self.__log("STATE <- {}".format(context.state.name))
             context.state.exit(context)
+            context.previous_state = context.state
 
         context.state = state
         self.__log("STATE -> {}".format(context.state.name))
