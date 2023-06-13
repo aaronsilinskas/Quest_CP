@@ -12,6 +12,7 @@ from infrared import Infrared
 
 # Pins
 PIN_NEOPIXEL = board.D5
+PIN_NEOPIXEL_5X5 = board.D10
 PIN_DFPLAYER_TX = board.TX
 PIN_DFPLAYER_RX = board.RX
 PIN_TRIGGER = board.A1
@@ -21,7 +22,9 @@ PIN_IR_TRANSMITTER = board.A3
 # Set up Neopixel
 NUM_PIXELS = 12  # NeoPixel strip length (in pixels)
 strip = neopixel.NeoPixel(PIN_NEOPIXEL, NUM_PIXELS,
-                          brightness=1, auto_write=False)
+                          brightness=0.25, auto_write=False)
+hud = neopixel.NeoPixel(PIN_NEOPIXEL_5X5, 5*5,
+                          brightness=0.1, auto_write=False)
 
 # Set up Radio
 RADIO_FREQ_MHZ = 915.0
@@ -70,6 +73,7 @@ trigger.pull = Pull.UP
 
 pixel_num = 0
 pixel_color = (64, 0, 0)
+hud_y = 0
 
 while True:
     if trigger.value == 0:
@@ -89,7 +93,7 @@ while True:
 
     if radio.payload_ready():
         radio_received = radio.receive(keep_listening=True)
-        print("Radio Data Received: ", 
+        print("Radio Data Received: ",
               radio_received.decode("utf-8"), radio.last_rssi)
 
     strip[pixel_num] = pixel_color
@@ -101,6 +105,15 @@ while True:
         else:
             pixel_color = 0
     strip.show()
+
+    hud.fill(0)
+    hud_pixel = hud_y * 5
+    for p in range(hud_pixel, hud_pixel + 5):
+        hud[p] = (0,0,255)
+    hud.show()
+    hud_y += 1
+    if hud_y > 4:
+        hud_y = 0
 
     x, y, z = accel.acceleration
     print(x, y, z)
