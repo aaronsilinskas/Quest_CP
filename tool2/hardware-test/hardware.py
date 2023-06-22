@@ -8,6 +8,7 @@ import adafruit_rfm69
 import adafruit_lis3dh
 import adafruit_drv2605
 from mindwidgets_df1201s import DF1201S
+from adafruit_debouncer import Debouncer
 
 # Device Configuration
 
@@ -19,9 +20,10 @@ log("Device Configuration")
 stemma_i2c = board.STEMMA_I2C()
 
 log("..Trigger")
-trigger = DigitalInOut(board.A1)
-trigger.direction = Direction.INPUT
-trigger.pull = Pull.UP
+trigger_in = DigitalInOut(board.A1)
+trigger_in.direction = Direction.INPUT
+trigger_in.pull = Pull.UP
+trigger = Debouncer(lambda: not trigger_in.value, interval = 0.01)
 
 ## HUD
 log("..HUD")
