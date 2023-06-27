@@ -27,15 +27,18 @@ def _calculate_crc(data):
 
 
 class Infrared(object):
-    def __init__(self, ir_pulseout, ir_pulsein):
+    def __init__(self, ir_pulseout, ir_pulsein, logging=False):
         self._ir_pulseout = ir_pulseout
         self._ir_pulsein = ir_pulsein
+        self.logging = logging
         self._decoder = IRDecoder()
 
     def send(self, data):
         self._wait_for_traffic()
 
-        print("IR Sending: ", data)
+        if self.logging:
+            print("IR Sending: ", data)
+
         # length = header + (data * 8 bits per byte) + crc bits + lead out
         durations = array.array("H", [0] * (2 + len(data) * 8 + 8 + 1))
         durations[0] = IR_HEADER_MARK
@@ -48,12 +51,15 @@ class Infrared(object):
             duration_index += 8
 
         crc = _calculate_crc(data)
-        # print("CRC: ", bin(crc))
+        if self.logging:
+            print("CRC: ", bin(crc))
         self._encode_byte(durations, duration_index, crc)
 
-        # print("Durations: ", durations)
+        if self.logging:
+            print("Durations: ", durations)
         self._ir_pulseout.send(durations)
-        # print("Sent")
+        if self.logging:
+            print("Sent")
 
     def _wait_for_traffic(self):
         while True:
@@ -61,8 +67,10 @@ class Infrared(object):
             time.sleep(IR_HEADER_MARK / 38000)
             if last_len == len(self._ir_pulsein):
                 break
-            else:
+            elif self.logging:
                 print("Waiting in IR traffic ", last_len)
+            else:
+                pass
 
     def receive(self):
         if len(self._ir_pulsein) == 0:
@@ -84,11 +92,13 @@ class Infrared(object):
 
 
 class IRDecoder(object):
-    def __init__(self):
+    def __init__(self, logging=False):
+        self.logging = logging
         self._reset_decode()
 
     def decode(self, pulse):
-        # print("Pulse: ", pulse)
+        if self.logging:
+            print("Pulse: ", pulse)
 
         # discard pulses until we get the first header pulse
         if self._received_headers == 0:
@@ -107,7 +117,8 @@ class IRDecoder(object):
                 self._write_bit(0)
             elif self._check_pulse(pulse, IR_LEAD_OUT):
                 received_crc = self._received_data[-1]
-                received_data = self._received_data[: len(self._received_data) - 1]
+                received_data = self._received_data[: len(
+                    self._received_data) - 1]
                 calculated_crc = _calculate_crc(received_data)
                 pulse_error_margin = self._max_error_margin
                 self._reset_decode()
@@ -115,8 +126,11 @@ class IRDecoder(object):
                     error_ratio = pulse_error_margin / IR_ERROR_MARGIN
                     signal_strength = min(1, 1.3 - error_ratio)
                     return received_data, signal_strength
+                elif self.logging:
+                    print("CRC mismatch: ", bin(
+                        received_crc), bin(calculated_crc))
                 else:
-                    print("CRC mismatch: ", bin(received_crc), bin(calculated_crc))
+                    pass
             else:
                 # unknown pulse, packet is corrupt so reset
                 self._reset_decode()
