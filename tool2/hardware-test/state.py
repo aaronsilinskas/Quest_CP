@@ -13,13 +13,13 @@ class State:
     def exit(self, thing: Thing):
         pass
 
-    def update(self, thing: Thing):
+    def update(self, thing: Thing) -> State:
         return self.name
 
 
 class Thing:
-    def __init__(self, enable_logging=False):
-        self.enable_logging = enable_logging
+    def __init__(self, logging=False):
+        self.logging = logging
 
         self.state: State = None
         self.previous_state: State = None
@@ -28,7 +28,7 @@ class Thing:
         self.time_active: float = 0
 
     def __log(self, message):
-        if self.enable_logging:
+        if self.logging:
             print(message)
 
     def go_to_state(self, state: State):
