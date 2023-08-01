@@ -56,7 +56,7 @@ turret_position.on_move.add(lambda event: print("Turret Moved", event))
 
 # OUTPUTS
 turret_reticule = SpotlightPixels(
-    pixels, color=(0, 255, 0), width=4, wrap=True)
+    pixels, color=(0, 255, 0), width=3, wrap=True)
 
 turret_position.on_move.add(lambda event: turret_reticule.update(event[1]))
 

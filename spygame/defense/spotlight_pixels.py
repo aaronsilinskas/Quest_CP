@@ -24,8 +24,8 @@ class SpotlightPixels:
         center_pixel = self._position * pixel_count
 
         # Draw left side, handle left wrap
-        left_pixel = center_pixel - self._width / 2 + 0.5
-        right_pixel = left_pixel + self._width - 0.5
+        left_pixel = center_pixel - self._width / 2
+        right_pixel = left_pixel + self._width
         current_pixel = left_pixel
         while current_pixel <= right_pixel:
             # map to real pixel location
