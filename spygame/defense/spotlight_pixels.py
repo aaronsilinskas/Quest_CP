@@ -17,8 +17,11 @@ class SpotlightPixels:
     def position(self) -> float:
         return self._position
 
-    def update(self, position: float):
+    @position.setter
+    def position(self, position: float) -> None:
         self._position = position
+
+    def show(self):
         pixel_count = len(self._pixels)
 
         center_pixel = self._position * pixel_count

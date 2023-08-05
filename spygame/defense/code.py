@@ -38,12 +38,12 @@ log("Hardware Setup")
 
 log("..Pixels")
 pixels = neopixel.NeoPixel(
-    board.NEOPIXEL, 10, brightness=0.1, auto_write=False)
+    board.NEOPIXEL, 10, brightness=0.05, auto_write=False)
 
 log("..Buttons")
-turn_right_in = touchio.TouchIn(board.A1)
+turn_right_in = touchio.TouchIn(board.A6)
 turn_right_button = Debouncer(lambda: turn_right_in.value, interval=0.01)
-turn_left_in = touchio.TouchIn(board.A6)
+turn_left_in = touchio.TouchIn(board.A1)
 turn_left_button = Debouncer(lambda: turn_left_in.value, interval=0.01)
 trigger_in = touchio.TouchIn(board.A3)
 trigger_button = Debouncer(lambda: trigger_in.value, interval=0.01)
@@ -51,14 +51,17 @@ trigger_button = Debouncer(lambda: trigger_in.value, interval=0.01)
 
 # INPUTS
 turret_position = ButtonKnobInput(left=lambda: turn_left_button.value,
-                                  right=lambda: turn_right_button.value, max_speed=0.25, acceleration=0.05, deceleration=0.1)
-turret_position.on_move.add(lambda event: print("Turret Moved", event))
+                                  right=lambda: turn_right_button.value, max_speed=0.25, acceleration=0.10, deceleration=0.15)
+# turret_position.on_move.add(lambda event: print("Turret Moved", event))
 
 # OUTPUTS
 turret_reticule = SpotlightPixels(
     pixels, color=(0, 255, 0), width=3, wrap=True)
 
-turret_position.on_move.add(lambda event: turret_reticule.update(event[1]))
+def update_target_reticule(position: float) -> None:
+    turret_reticule.position = position
+
+turret_position.on_move.add(lambda event: update_target_reticule(event[1]))
 
 # MAIN LOOP
 
@@ -74,9 +77,10 @@ while True:
     turn_left_button.update()
     trigger_button.update()
 
-    pixels.fill(0)
-
     turret_position.update(ellapsed_time)
+
+    pixels.fill(0)
+    turret_reticule.show()
 
     pixels.show()
 
