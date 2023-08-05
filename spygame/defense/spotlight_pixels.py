@@ -21,6 +21,14 @@ class SpotlightPixels:
     def position(self, position: float) -> None:
         self._position = position
 
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, color) -> None:
+        self._color = color
+
     def show(self):
         pixel_count = len(self._pixels)
 
