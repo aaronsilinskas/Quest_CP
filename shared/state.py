@@ -1,59 +1,60 @@
 
 import time
 
-class StateContext(object):
-    def __init__(self):
-        self.state:State = None
-        self.previous_state:State = None
-        self.time_last_update:float = 0
-        self.time_ellapsed:float = 0
-        self.time_active:float = 0
-    
-class State(object):
+
+class State:
     @property
     def name(self):
         return type(self).__name__
 
-    def enter(self, context: StateContext):
+    def enter(self, thing: Thing):
         pass
 
-    def exit(self, context: StateContext):
+    def exit(self, thing: Thing):
         pass
 
-    def update(self, context: StateContext):
+    def update(self, thing: Thing) -> State:
         return self.name
 
 
-class StateMachine(object):
+class Thing:
+    def __init__(self, logging=False):
+        self.logging = logging
 
-    def __init__(self, disable_logging = False):
-        self.disable_logging = disable_logging
-    
+        self.state: State = None
+        self.previous_state: State = None
+        self.time_last_update: float = 0
+        self.time_ellapsed: float = 0
+        self.time_active: float = 0
+
     def __log(self, message):
-        if not self.disable_logging:
+        if self.logging:
             print(message)
 
-    def go_to_state(self, state:State, context: StateContext):
-        if context.state:
-            self.__log("STATE <- {}".format(context.state.name))
-            context.state.exit(context)
-            context.previous_state = context.state
+    def go_to_state(self, state: State):
+        if self.state == state:
+            return
+        
+        if self.state:
+            self.__log(f"{self.__class__.__name__} STATE <- {self.state.name}")
+            self.state.exit(self)
+            self.previous_state = self.state
 
-        context.state = state
-        self.__log("STATE -> {}".format(context.state.name))
+        self.state = state
+        self.__log(f"{self.__class__.__name__} STATE -> {self.state.name}")
 
-        context.time_last_update = time.monotonic()
-        context.time_ellapsed = 0
-        context.time_active = 0
-        context.state.enter(context)
+        self.time_last_update = time.monotonic()
+        self.time_ellapsed = 0
+        self.time_active = 0
+        self.state.enter(self)
 
-    def update(self, context: StateContext):
-        if context.state:
-            now = time.monotonic() 
-            context.time_ellapsed = now - context.time_last_update
-            context.time_last_update = now
-            context.time_active += context.time_ellapsed
-            
-            next_state = context.state.update(context)
-            if next_state != context.state:
-                self.go_to_state(next_state, context)
+    def update(self):
+        if self.state:
+            now = time.monotonic()
+            self.time_ellapsed = now - self.time_last_update
+            self.time_last_update = now
+            self.time_active += self.time_ellapsed
+
+            next_state = self.state.update(self)
+            if next_state != self.state:
+                self.go_to_state(next_state)
