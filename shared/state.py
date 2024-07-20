@@ -1,4 +1,3 @@
-
 import time
 
 
@@ -34,7 +33,7 @@ class Thing:
     def go_to_state(self, state: State):
         if self.state == state:
             return
-        
+
         if self.state:
             self.__log(f"{self.__class__.__name__} STATE <- {self.state.name}")
             self.state.exit(self)
@@ -47,6 +46,11 @@ class Thing:
         self.time_ellapsed = 0
         self.time_active = 0
         self.state.enter(self)
+
+    def start(self):
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement start(self) to set an initial state using self.go_to_state"
+        )
 
     def update(self):
         if self.state:
