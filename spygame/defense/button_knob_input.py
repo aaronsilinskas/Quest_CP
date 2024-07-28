@@ -1,5 +1,9 @@
-from event_listeners import EventListeners
+from state_of_things.observers import Observers
 
+class ButtonKnobObserver:
+    def knob_moved(self, old_value: float, new_value: float):
+        pass
+    
 class ButtonKnobInput:
     # Simulates a knob turned by a left and right button.
     # Adjust max_speed, acceleration, and deceleration to desired feel
@@ -10,7 +14,7 @@ class ButtonKnobInput:
         self._acceleration: float = acceleration
         self._deceleration: float = deceleration
 
-        self._on_move = EventListeners()
+        self._observers = Observers()
 
         self._speed = 0.0
         self._value: float = 0.0
@@ -25,8 +29,8 @@ class ButtonKnobInput:
         return self._last_value
     
     @property
-    def on_move(self) -> EventListeners:
-        return self._on_move
+    def observers(self) -> Observers:
+        return self._observers
 
     def update(self, time_ellapsed: float) -> None:
         left_down = self._left()
@@ -51,4 +55,4 @@ class ButtonKnobInput:
         while self._value > 1:
             self._value -= 1
         if self._value != self._last_value:
-            self._on_move.notify((self._last_value, self._value))
+            self._observers.notify("knob_moved", self._last_value, self._value)
