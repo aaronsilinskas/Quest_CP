@@ -12,7 +12,6 @@ Neutralized - When hit points is reduced to 0, the turret is out of the game unt
 import array
 import random
 import pulseio
-import pwmio
 import board
 from digitalio import DigitalInOut, Direction, Pull
 from simpleio import map_range
@@ -29,7 +28,7 @@ from adafruit_irremote import GenericDecode
 from adafruit_led_animation.animation.comet import Comet
 from adafruit_led_animation.animation.sparklepulse import SparklePulse
 
-from state import Thing, State, ThingUpdater
+from state_of_things import Thing, State, ThingObserver
 
 # CONFIGURATION
 import config
@@ -70,8 +69,7 @@ pulse_in = pulseio.PulseIn(board.RX, maxlen=120, idle_state=True)
 pulse_in.clear()
 ir_decoder = GenericDecode()
 
-pwm_out = pwmio.PWMOut(board.TX, frequency=38000, duty_cycle=2 ** 15)
-pulse_out = pulseio.PulseOut(pwm_out)
+pulse_out = pulseio.PulseOut(board.TX, frequency=38000, duty_cycle=2 ** 15)
 
 # ANIMATIONS
 configure_animation = Comet(
@@ -83,12 +81,33 @@ neutralized_animation = SparklePulse(
 
 # STATE MACHINE
 
+class TurretStates:
+    configure: State
+    countdown: State
+    sentry: State
+    active: State
+    charge_shot: State
+    shoot: State
+    hit: State
+    neutralized: State
+    capturing: State
 
 class Turret(Thing):
+    active_time_remaining: float = 0
+    shoot_delay: float = 0
+    shots_to_take: int = 0
+    shot_charge: float = 0
+    hit_point_max: int = 0
+    hit_points: int = 0
+    team: int = 0
+    team_color: int = 0
+    shoot_pulse: list = []
+    hit_pulse: list = []
+    
     def __init__(self):
-        super().__init__()
-
-        self.reset(config.STARTING_TEAM)
+        super().__init__(TurretStates.configure)
+        
+        self.setup_team(config.STARTING_TEAM)
 
     def reset(self, team):
         # Turret threat tracking
@@ -146,14 +165,14 @@ def check_pulses(hit_pulse):
             return None
 
         if len(pulses) != len(hit_pulse):
-            return States.active
+            return TurretStates.active
 
         for expected_pulse in hit_pulse:
             pulse_delta = abs(expected_pulse - pulses.pop(0))
             if pulse_delta > 150:
-                return States.active
+                return TurretStates.active
 
-        return States.hit
+        return TurretStates.hit
 
     return None
 
@@ -187,18 +206,6 @@ def play_sound(sound_file):
     audio.play(last_wave)
 
 
-class States:
-    configure: State
-    countdown: State
-    sentry: State
-    active: State
-    charge_shot: State
-    shoot: State
-    hit: State
-    neutralized: State
-    capturing: State
-
-
 class Configure(State):
     def enter(self, thing: Turret):
         pixels.fill(0)
@@ -206,7 +213,7 @@ class Configure(State):
 
     def update(self, thing: Turret):
         if not configure_mode():
-            return States.countdown
+            return TurretStates.countdown
 
         pulses = ir_decoder.read_pulses(
             pulse_in, max_pulse=10000, blocking=False)
@@ -241,7 +248,7 @@ class Configure(State):
         return self
 
 
-States.configure = Configure()
+TurretStates.configure = Configure()
 
 
 class Countdown(State):
@@ -255,13 +262,13 @@ class Countdown(State):
 
     def update(self, thing: Turret):
         if configure_mode():
-            return States.configure
+            return TurretStates.configure
 
         if int(thing.time_active) == config.COUNTDOWN_SECONDS:
             play_sound("sounds\countdown-done.wav")
             if (thing.team == 0):
-                return States.neutralized
-            return States.sentry
+                return TurretStates.neutralized
+            return TurretStates.sentry
 
         current_pixels = fill_pixel_range(thing.time_active, 0,
                                           config.COUNTDOWN_SECONDS, thing.team_color)
@@ -275,7 +282,7 @@ class Countdown(State):
         return self
 
 
-States.countdown = Countdown()
+TurretStates.countdown = Countdown()
 
 
 class Sentry(State):
@@ -287,7 +294,7 @@ class Sentry(State):
 
     def update(self, thing: Turret):
         if configure_mode():
-            return States.configure
+            return TurretStates.configure
 
         pulses_state = check_pulses(thing.hit_pulse)
         if pulses_state:
@@ -299,7 +306,7 @@ class Sentry(State):
         return self
 
 
-States.sentry = Sentry()
+TurretStates.sentry = Sentry()
 
 
 class Active(State):
@@ -312,17 +319,17 @@ class Active(State):
     def update(self, thing: Turret):
         thing.active_time_remaining -= thing.time_ellapsed
         if thing.active_time_remaining <= 0:
-            return States.sentry
+            return TurretStates.sentry
 
         if thing.shots_to_take > 0:
             thing.shots_to_take -= 1
-            return States.charge_shot
+            return TurretStates.charge_shot
         elif thing.shoot_delay > 0:
             thing.shoot_delay -= thing.time_ellapsed
             if thing.shoot_delay <= 0:
                 thing.shots_to_take = random.randint(
                     0, config.MAX_SHOT_BURST)
-                return States.charge_shot
+                return TurretStates.charge_shot
         else:
             thing.shoot_delay = randfloat(
                 config.SHOOT_DELAY_MIN, config.SHOOT_DELAY_MAX)
@@ -351,7 +358,7 @@ class Active(State):
         return self
 
 
-States.active = Active()
+TurretStates.active = Active()
 
 
 class ChargeShot(State):
@@ -365,7 +372,7 @@ class ChargeShot(State):
     def update(self, thing: Turret):
         thing.shot_charge += thing.time_ellapsed
         if thing.shot_charge > config.SHOT_CHARGE_TIME:
-            return States.shoot
+            return TurretStates.shoot
 
         fill_pixel_range(thing.shot_charge, 0,
                          config.SHOT_CHARGE_TIME, config.COLOR_SHOT_CHARGE)
@@ -374,7 +381,7 @@ class ChargeShot(State):
         return self
 
 
-States.charge_shot = ChargeShot()
+TurretStates.charge_shot = ChargeShot()
 
 
 class Shoot(State):
@@ -397,10 +404,10 @@ class Shoot(State):
         while audio.playing:
             True
 
-        return States.active
+        return TurretStates.active
 
 
-States.shoot = Shoot()
+TurretStates.shoot = Shoot()
 
 
 class Hit(State):
@@ -411,13 +418,13 @@ class Hit(State):
 
     def update(self, thing: Turret):
         if thing.hit_points <= 0:
-            return States.neutralized
+            return TurretStates.neutralized
 
         thing.active_time_remaining = 0  # causes a refresh on active time
-        return States.active
+        return TurretStates.active
 
 
-States.hit = Hit()
+TurretStates.hit = Hit()
 
 
 class Neutralized(State):
@@ -428,7 +435,7 @@ class Neutralized(State):
 
     def update(self, thing: Turret):
         if team_1_button_down() or team_2_button_down():
-            return States.capturing
+            return TurretStates.capturing
 
         neutralized_animation.animate()
         pixels.show()
@@ -436,7 +443,7 @@ class Neutralized(State):
         return self
 
 
-States.neutralized = Neutralized()
+TurretStates.neutralized = Neutralized()
 
 
 class Capturing(State):
@@ -456,12 +463,12 @@ class Capturing(State):
     def update(self, thing: Turret):
         current_team = self._button_team()
         if current_team != thing.team or current_team == 0:
-            return States.neutralized
+            return TurretStates.neutralized
 
         if int(thing.time_active) > config.CAPTURE_SECONDS:
             print("Captured: ", thing.team)
             thing.reset(thing.team)
-            return States.sentry
+            return TurretStates.sentry
 
         fill_pixel_range(thing.time_active, 0,
                          config.CAPTURE_SECONDS, thing.team_color)
@@ -470,20 +477,18 @@ class Capturing(State):
         return self
 
 
-States.capturing = Capturing()
+TurretStates.capturing = Capturing()
 
-
+class StateChangeObserver(ThingObserver):
+    def state_changed(self, old_state: State, new_state: State):
+        print(f"State changed from {old_state.name} to {new_state.name}")
+    
 # MAIN LOOP
 turret = Turret()
-thing_updater = ThingUpdater()
-
-if configure_mode():
-    thing_updater.go_to_state(turret, States.configure)
-else:
-    thing_updater.go_to_state(turret, States.countdown)
+turret.observers.attach(StateChangeObserver())
 
 while True:
-    if configure_mode() and turret.state != States.configure:
-        thing_updater.go_to_state(turret, States.configure)
-
-    thing_updater.update(turret)
+    if configure_mode() and turret.current_state != TurretStates.configure:
+        turret.go_to_state(TurretStates.configure)
+    
+    turret.update()
