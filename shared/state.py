@@ -13,7 +13,7 @@ class State:
         pass
 
     def update(self, thing: Thing) -> State:
-        return self.name
+        return self
 
 
 class Thing:
