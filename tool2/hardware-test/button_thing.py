@@ -1,5 +1,4 @@
-from state import Thing, State
-from event_listeners import EventListeners
+from state_of_things import Thing, State, ThingObserver
 
 try:
     from typing import Callable, TypeAlias
@@ -8,28 +7,23 @@ try:
 except ImportError:
     pass
 
+class ButtonObserver(ThingObserver):
+    def on_press(self, button:Thing):
+        pass
+    
+    def on_release(self, button:Thing):
+        pass
+
 
 class ButtonThing(Thing):
-    def __init__(self, predicate: Callback[[], bool], enable_logging=False):
-        super().__init__(enable_logging)
+    def __init__(self, predicate: Callback[[], bool], name: str = None):
+        super().__init__(ButtonStates.released, name=name)
 
         self._predicate = predicate
-        self._on_press = EventListeners()
-        self._on_release = EventListeners()
-
-        self.go_to_state(ButtonStates.released)
 
     @property
     def value(self) -> bool:
         return self._predicate()
-
-    @property
-    def on_press(self) -> EventListeners:
-        return self._on_press
-
-    @property
-    def on_release(self) -> EventListeners:
-        return self._on_release
 
 
 class ButtonStates:
@@ -39,7 +33,7 @@ class ButtonStates:
 
 class ReleasedState(State):
     def enter(self, thing: ButtonThing):
-        thing.on_release.notify()
+        thing.observers.notify("on_release", thing)
 
     def update(self, thing: ButtonThing) -> State:
         if thing.value:
@@ -53,7 +47,7 @@ ButtonStates.released = ReleasedState()
 
 class PressedState(State):
     def enter(self, thing: ButtonThing):
-        thing.on_press.notify()
+        thing.observers.notify("on_press", thing)
 
     def update(self, thing: ButtonThing) -> State:
         if not thing.value:
