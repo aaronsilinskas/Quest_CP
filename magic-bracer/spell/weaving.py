@@ -237,4 +237,3 @@ class Spell:
         return (
             f"Spell(spell={element_name}, shape={shape_name}, purpose={purpose_name})"
         )
-

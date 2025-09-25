@@ -31,8 +31,14 @@ keys = keypad.Keys((board.BUTTON,), value_when_pressed=False)
 i2s = audiobusio.I2SOut(board.I2S_BIT_CLOCK, board.I2S_WORD_SELECT, board.I2S_DATA)
 music = audiocore.WaveFile(SOUND_FILE)
 # NOTE: Must set buffer size to a large number to avoid noise when I2C is used. This prevents I2S from running out of data when I2C is busy.
-mixer = audiomixer.Mixer(buffer_size=4096, voice_count=1, sample_rate=music.sample_rate, channel_count=1,
-                         bits_per_sample=music.bits_per_sample, samples_signed=True)
+mixer = audiomixer.Mixer(
+    buffer_size=4096,
+    voice_count=1,
+    sample_rate=music.sample_rate,
+    channel_count=1,
+    bits_per_sample=music.bits_per_sample,
+    samples_signed=True,
+)
 mixer.voice[0].level = 0.2
 
 # NeoPixel Setup
@@ -60,55 +66,49 @@ i2s.play(mixer)
 last_imu_log = time.monotonic()
 
 # Weaving Thing
-weaving = WeavingThing()
+weaving = WeavingThing(starting_level=1)
 
-# Spell State
-spell_step = 0
-last_release = 0
-#selector = weaving.WeavingSelection()
 
 class LoggingWeavingObserver(ThingObserver):
     def state_changed(self, thing: WeavingThing, old_state, new_state):
-        #print("State changed on ", thing.name, " from ", old_state.name, " to ", new_state.name)
+        # print("State changed on ", thing.name, " from ", old_state.name, " to ", new_state.name)
         pass
-    
+
     def spell_selected(self, thing: WeavingThing, spell: Spell):
         print("Spell selected: ", spell)
-    
+
     def shape_selected(self, thing: WeavingThing, spell: Spell):
         print("Shape selected: ", spell)
-    
+
     def spell_ready(self, thing: WeavingThing, spell: Spell):
         print("Spell Ready: ", spell)
+
 
 weaving.observers.attach(LoggingWeavingObserver())
 
 while True:
     if sound and not mixer.voice[0].playing:
         print("Playing now!")
-        mixer.voice[0].play(music)        
+        mixer.voice[0].play(music)
 
     event = keys.events.get()
     if event and event.pressed:
         print("click")
         sound = not sound
         mixer.voice[0].stop()
-        
-    #rainbow.animate()
-    
+
+    # rainbow.animate()
+
     x, y, z = [
         value / adafruit_lis3dh.STANDARD_GRAVITY for value in lis3dh.acceleration
     ]
-    
+
     # if last_imu_log + 1 < time.monotonic():
-    #     last_imu_log = time.monotonic()        
+    #     last_imu_log = time.monotonic()
     #     print(f"x = {x:.3f} G, y = {y:.3f} G, z = {z:.3f} G")
-    
+
     trigger.update()
-    
+
     weaving.trigger_pressed = not trigger.value
     weaving.current_position = WeavingPosition.from_accelerometer(x, y, z)
     weaving.update()
-
-        
-    

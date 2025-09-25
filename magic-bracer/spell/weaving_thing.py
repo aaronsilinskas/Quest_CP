@@ -14,12 +14,13 @@ class WeavingStates:
 
 class WeavingThing(Thing):
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, starting_level: int = 1):
         super().__init__(WeavingStates.waiting, name)
         self._trigger_pressed: bool = False
         self._start_position: int = 0
         self._current_position: int = 0
         self._spell: Spell = Spell()
+        self._level: int = starting_level
 
     def reset(self):
         self._spell = Spell()
@@ -51,6 +52,10 @@ class WeavingThing(Thing):
     @property
     def spell(self) -> Spell:
         return self._spell
+
+    @property
+    def level(self) -> int:
+        return self._level
 
 
 class WeavingObserver(ThingObserver):
@@ -101,6 +106,9 @@ class SpellSelectedState(State):
         thing.observers.notify("spell_selected", thing, thing.spell)
 
     def update(self, thing: WeavingThing):
+        if thing.level == 1:
+            return WeavingStates.spell_ready
+
         if thing.trigger_pressed:
             return WeavingStates.select_shape
 
@@ -135,6 +143,9 @@ class ShapeSelectedState(State):
         thing.observers.notify("shape_selected", thing, thing.spell)
 
     def update(self, thing: WeavingThing):
+        if thing.level == 2:
+            return WeavingStates.spell_ready
+
         if thing.trigger_pressed:
             return WeavingStates.select_purpose
 
