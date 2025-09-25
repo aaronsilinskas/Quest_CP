@@ -1,4 +1,4 @@
-from spell.weaving import Spell, WeavingElement, WeavingShape, WeavingPurpose
+from spell.spell import Spell, match_position
 from state_of_things import State, Thing, ThingObserver
 
 
@@ -91,7 +91,7 @@ class CastOrWeaveState(State):
 
     def update(self, thing: WeavingThing):
         if not thing.trigger_pressed:
-            if thing.time_active < 0.5:
+            if thing.time_active < 0.25:
                 return WeavingStates.cast_spell
 
             return WeavingStates.select_spell
@@ -115,9 +115,9 @@ class SelectSpellState(State):
     def update(self, thing: WeavingThing):
         thing.reset()
 
-        thing.spell.element = WeavingElement.from_positions(
+        thing.spell.element = match_position(
             thing.start_position, thing.current_position
-        )
+        ).element
         return WeavingStates.spell_selected
 
 
@@ -150,9 +150,9 @@ class SelectShapeState(State):
 
     def update(self, thing: WeavingThing):
         if not thing.trigger_pressed:
-            thing.spell.shape = WeavingShape.from_positions(
+            thing.spell.shape = match_position(
                 thing.start_position, thing.current_position
-            )
+            ).shape
             return WeavingStates.shape_selected
 
         return self
@@ -187,9 +187,9 @@ class SelectPurposeState(State):
 
     def update(self, thing: WeavingThing):
         if not thing.trigger_pressed:
-            thing.spell.purpose = WeavingPurpose.from_positions(
+            thing.spell.purpose = match_position(
                 thing.start_position, thing.current_position
-            )
+            ).purpose
             return WeavingStates.spell_ready
 
         return self

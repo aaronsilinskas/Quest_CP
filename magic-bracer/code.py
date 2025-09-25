@@ -12,10 +12,10 @@ import audiocore
 import neopixel
 from adafruit_debouncer import Debouncer
 from adafruit_led_animation.sequence import AnimationSequence
-from adafruit_led_animation.animation.sparkle import Sparkle
+from adafruit_led_animation.animation.sparklepulse import SparklePulse
 import adafruit_lis3dh
 from spell.weaving_thing import WeavingThing
-from spell.weaving import WeavingPosition, Spell
+from spell.spell import WeavingPosition, Spell, match_element
 from state_of_things import ThingObserver
 
 # I2C
@@ -45,7 +45,7 @@ mixer.voice[0].level = 0.2
 # NeoPixel Setup
 num_pixels = 75
 pixels = neopixel.NeoPixel(board.EXTERNAL_NEOPIXELS, num_pixels)
-pixels.brightness = 0.05
+pixels.brightness = 0.1
 
 # IMU Setup
 lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c)
@@ -95,8 +95,12 @@ class LEDAnimationWeavingObserver(ThingObserver):
 
     def spell_selected(self, thing: WeavingThing, spell: Spell):
         print("Spell selected: ", spell)
-        self.animation = Sparkle(
-            pixels, speed=0.05, color=(255, 255, 255), num_sparkles=10
+        color = match_element(spell.element).color
+        # reduce the color to half brightness
+        starting_color = (color[0] // 2, color[1] // 2, color[2] // 2)
+        pixels.fill(starting_color)
+        self.animation = SparklePulse(
+            pixels, speed=0.05, color=color, period=2, breath=0, min_intensity=0.2
         )
 
 
