@@ -11,7 +11,8 @@ import audiobusio
 import audiocore
 import neopixel
 from adafruit_debouncer import Debouncer
-from adafruit_led_animation.animation.rainbow import Rainbow
+from adafruit_led_animation.sequence import AnimationSequence
+from adafruit_led_animation.animation.sparkle import Sparkle
 import adafruit_lis3dh
 from spell.weaving_thing import WeavingThing
 from spell.weaving import WeavingPosition, Spell
@@ -45,7 +46,6 @@ mixer.voice[0].level = 0.2
 num_pixels = 75
 pixels = neopixel.NeoPixel(board.EXTERNAL_NEOPIXELS, num_pixels)
 pixels.brightness = 0.05
-rainbow = Rainbow(pixels, speed=0.05, period=2)
 
 # IMU Setup
 lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c)
@@ -74,6 +74,9 @@ class LoggingWeavingObserver(ThingObserver):
         # print("State changed on ", thing.name, " from ", old_state.name, " to ", new_state.name)
         pass
 
+    def spell_cast(self, thing: WeavingThing, spell: Spell):
+        print("CAST: ", spell)
+
     def spell_selected(self, thing: WeavingThing, spell: Spell):
         print("Spell selected: ", spell)
 
@@ -86,6 +89,20 @@ class LoggingWeavingObserver(ThingObserver):
 
 weaving.observers.attach(LoggingWeavingObserver())
 
+
+class LEDAnimationWeavingObserver(ThingObserver):
+    animation: AnimationSequence = None
+
+    def spell_selected(self, thing: WeavingThing, spell: Spell):
+        print("Spell selected: ", spell)
+        self.animation = Sparkle(
+            pixels, speed=0.05, color=(255, 255, 255), num_sparkles=10
+        )
+
+
+animation_observer = LEDAnimationWeavingObserver()
+weaving.observers.attach(animation_observer)
+
 while True:
     if sound and not mixer.voice[0].playing:
         print("Playing now!")
@@ -97,7 +114,8 @@ while True:
         sound = not sound
         mixer.voice[0].stop()
 
-    # rainbow.animate()
+    if animation_observer.animation:
+        animation_observer.animation.animate()
 
     x, y, z = [
         value / adafruit_lis3dh.STANDARD_GRAVITY for value in lis3dh.acceleration

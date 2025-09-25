@@ -4,6 +4,8 @@ from state_of_things import State, Thing, ThingObserver
 
 class WeavingStates:
     waiting: State
+    cast_or_weave: State
+    cast_spell: State
     select_spell: State
     spell_selected: State
     select_shape: State
@@ -68,15 +70,14 @@ class WeavingObserver(ThingObserver):
     def spell_ready(self, thing: WeavingThing, spell: Spell):
         pass
 
+    def spell_cast(self, thing: WeavingThing, spell: Spell):
+        pass
+
 
 class WaitingState(State):
-    def enter(self, thing: WeavingThing):
-        thing.reset()
-
     def update(self, thing: WeavingThing):
         if thing.trigger_pressed:
-
-            return WeavingStates.select_spell
+            return WeavingStates.cast_or_weave
 
         return self
 
@@ -84,18 +85,40 @@ class WaitingState(State):
 WeavingStates.waiting = WaitingState()
 
 
-class SelectSpellState(State):
+class CastOrWeaveState(State):
     def enter(self, thing: WeavingThing):
         thing.start_position = thing.current_position
 
     def update(self, thing: WeavingThing):
         if not thing.trigger_pressed:
-            thing.spell.element = WeavingElement.from_positions(
-                thing.start_position, thing.current_position
-            )
-            return WeavingStates.spell_selected
+            if thing.time_active < 0.5:
+                return WeavingStates.cast_spell
 
-        return super().update(thing)
+            return WeavingStates.select_spell
+
+        return self
+
+
+WeavingStates.cast_or_weave = CastOrWeaveState()
+
+
+class CastSpellState(State):
+    def update(self, thing: WeavingThing):
+        thing.observers.notify("spell_cast", thing, thing.spell)
+        return WeavingStates.waiting
+
+
+WeavingStates.cast_spell = CastSpellState()
+
+
+class SelectSpellState(State):
+    def update(self, thing: WeavingThing):
+        thing.reset()
+
+        thing.spell.element = WeavingElement.from_positions(
+            thing.start_position, thing.current_position
+        )
+        return WeavingStates.spell_selected
 
 
 WeavingStates.select_spell = SelectSpellState()
