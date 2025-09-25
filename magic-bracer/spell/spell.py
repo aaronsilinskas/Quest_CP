@@ -236,6 +236,20 @@ def match_element(element: int) -> WeavingPositionEntry:
     return WEAVING_POSITIONS[2]  # Default to FIRE/IMMEDIATE/DAMAGE
 
 
+def match_shape(shape: int) -> WeavingPositionEntry:
+    for entry in WEAVING_POSITIONS:
+        if entry.shape == shape:
+            return entry
+    return WEAVING_POSITIONS[2]  # Default to FIRE/IMMEDIATE/DAMAGE
+
+
+def match_purpose(purpose: int) -> WeavingPositionEntry:
+    for entry in WEAVING_POSITIONS:
+        if entry.purpose == purpose:
+            return entry
+    return WEAVING_POSITIONS[2]  # Default to FIRE/IMMEDIATE/DAMAGE
+
+
 def get_constant_name(cls, value: int) -> str:
     for name in dir(cls):
         if not name.startswith("_"):
