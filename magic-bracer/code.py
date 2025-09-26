@@ -5,6 +5,8 @@
 import time
 import board
 import digitalio
+import pulseio
+import pwmio
 import keypad
 import audiomixer
 import audiobusio
@@ -23,6 +25,7 @@ from spell.spell import (
     match_shape,
 )
 from state_of_things import ThingObserver
+from infrared import Infrared
 
 # I2C
 i2c = board.I2C()
@@ -57,6 +60,13 @@ pixels.brightness = 0.1
 lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c)
 lis3dh.range = adafruit_lis3dh.RANGE_2_G
 
+# Infrared Setup
+ir_pulsein = pulseio.PulseIn(board.D10, maxlen=256, idle_state=True)
+#ir_pwmout = pwmio.PWMOut(board.D9, frequency=38000, duty_cycle=2**15)
+ir_pulseout = pulseio.PulseOut(board.D9, frequency=38000, duty_cycle=2**15)
+aoe_ir_pulseout = pulseio.PulseOut(board.D11, frequency=38000, duty_cycle=2**15)
+infrared = Infrared(ir_pulseout, ir_pulsein)
+
 # Trigger Setup
 trigger_pin = digitalio.DigitalInOut(board.EXTERNAL_BUTTON)
 trigger_pin.direction = digitalio.Direction.INPUT
@@ -72,7 +82,7 @@ i2s.play(mixer)
 last_imu_log = time.monotonic()
 
 # Weaving Thing
-weaving = WeavingThing(starting_level=3)
+weaving = WeavingThing(starting_level=1)
 
 
 class LoggingWeavingObserver(ThingObserver):
@@ -98,7 +108,7 @@ weaving.observers.attach(LoggingWeavingObserver())
 
 class LEDAnimationWeavingObserver(ThingObserver):
     animation: AnimationSequence = None
-
+    
     def _set_animation(self, color):
         # reduce the color to half brightness
         starting_color = (color[0] // 2, color[1] // 2, color[2] // 2)
@@ -108,17 +118,17 @@ class LEDAnimationWeavingObserver(ThingObserver):
         )
 
     def spell_selected(self, thing: WeavingThing, spell: Spell):
-        print("Spell selected: ", spell)
         self._set_animation(match_element(spell.element).color)
 
     def shape_selected(self, thing: WeavingThing, spell: Spell):
-        print("Shape selected: ", spell)
         self._set_animation(match_shape(spell.shape).color)
 
     def spell_ready(self, thing: WeavingThing, spell: Spell):
-        print("Spell Ready: ", spell)
         self._set_animation(match_element(spell.element).color)
-
+        
+    def spell_cast(self, thing: WeavingThing, spell: Spell):
+        # TODO: encode player, team, spell, and if it is aoe or not
+        infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])
 
 animation_observer = LEDAnimationWeavingObserver()
 weaving.observers.attach(animation_observer)
@@ -150,3 +160,8 @@ while True:
     weaving.trigger_pressed = not trigger.value
     weaving.current_position = WeavingPosition.from_accelerometer(x, y, z)
     weaving.update()
+    
+    received = infrared.receive()
+    if received is not None:
+        data, margin = received
+        print("IR Data Received: ", [hex(b) for b in data], margin)
