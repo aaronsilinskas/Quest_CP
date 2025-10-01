@@ -1,4 +1,5 @@
-from spell.spell import Spell, match_position
+from spell.spell import Spell
+from spell.weaving import match_position
 from state_of_things import State, Thing, ThingObserver
 
 

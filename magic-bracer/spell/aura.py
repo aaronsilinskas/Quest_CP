@@ -59,14 +59,15 @@ class Aura:
         for spell in self._active_spells:
             spell.modify_cast(self, cast)
 
-    def apply_hit(self, cast: CastSpell):
+    def apply_hit(self, cast: CastSpell):    
         # innately resist the cast by half of aura levels
         cast.levels.water -= max(1.0, self.levels.water / 2)
         cast.levels.earth -= max(1.0, self.levels.earth / 2)
         cast.levels.fire -= max(1.0, self.levels.fire / 2)
-
+        
         for spell in self._active_spells:
             spell.modify_hit(self, cast)
+        
         
         # TODO: this should handle the specific cast.spell purpose, and shape
         # TODO: this code is for immediate apply offensive spell

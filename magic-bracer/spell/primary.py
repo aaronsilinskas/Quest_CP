@@ -43,7 +43,6 @@ class PrimaryElementLevels:
         carryover += abs(earth_delta) if earth_delta < 0 else 0
 
         # distribute elements not yet subtracted evenly across non-zero elements
-        # BUG: does not handle carryover that exceeds available power on a remaining element
         while carryover > 0:
             non_zero_elements = sum(
                 1 for level in (self.fire, self.water, self.earth) if level > 0

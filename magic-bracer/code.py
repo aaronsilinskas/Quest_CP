@@ -6,7 +6,6 @@ import time
 import board
 import digitalio
 import pulseio
-import pwmio
 import keypad
 import audiomixer
 import audiobusio
@@ -16,19 +15,14 @@ from adafruit_debouncer import Debouncer
 from adafruit_led_animation.sequence import AnimationSequence
 from adafruit_led_animation.animation.sparklepulse import SparklePulse
 import adafruit_lis3dh
-from spell import spell
 from spell.weaving_thing import WeavingThing
-from spell.spell import (
-    WeavingPosition,
-    Spell,
-    match_element,
-    match_shape,
-)
+from spell.spell import Spell
+from spell.weaving import WeavingPosition
 from state_of_things import ThingObserver
 from infrared import Infrared
 from player import Player
 from spell.aura import CastSpell
-from spell.primary import PrimaryElementLevels
+from spell.spell_color import color_for_element, color_for_shape
 
 # I2C
 i2c = board.I2C()
@@ -122,13 +116,13 @@ class LEDAnimationWeavingObserver(ThingObserver):
         )
 
     def spell_selected(self, thing: WeavingThing, spell: Spell):
-        self._set_animation(match_element(spell.element).color)
+        self._set_animation(color_for_element(spell.element).color)
 
     def shape_selected(self, thing: WeavingThing, spell: Spell):
-        self._set_animation(match_shape(spell.shape).color)
+        self._set_animation(color_for_shape(spell.shape).color)
 
     def spell_ready(self, thing: WeavingThing, spell: Spell):
-        self._set_animation(match_element(spell.element).color)
+        self._set_animation(color_for_element(spell.element).color)
 
     def spell_cast(self, thing: WeavingThing, spell: Spell):
         print("Player aura: ", player.aura.levels, " casting spell: ", spell)
