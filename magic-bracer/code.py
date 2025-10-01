@@ -26,6 +26,9 @@ from spell.spell import (
 )
 from state_of_things import ThingObserver
 from infrared import Infrared
+from player import Player
+from spell.aura import CastSpell
+from spell.primary import PrimaryElementLevels
 
 # I2C
 i2c = board.I2C()
@@ -62,7 +65,7 @@ lis3dh.range = adafruit_lis3dh.RANGE_2_G
 
 # Infrared Setup
 ir_pulsein = pulseio.PulseIn(board.D10, maxlen=256, idle_state=True)
-#ir_pwmout = pwmio.PWMOut(board.D9, frequency=38000, duty_cycle=2**15)
+# ir_pwmout = pwmio.PWMOut(board.D9, frequency=38000, duty_cycle=2**15)
 ir_pulseout = pulseio.PulseOut(board.D9, frequency=38000, duty_cycle=2**15)
 aoe_ir_pulseout = pulseio.PulseOut(board.D11, frequency=38000, duty_cycle=2**15)
 infrared = Infrared(ir_pulseout, ir_pulsein)
@@ -81,8 +84,9 @@ i2s.play(mixer)
 # IMU State
 last_imu_log = time.monotonic()
 
-# Weaving Thing
+# Player and Weaving State
 weaving = WeavingThing(starting_level=1)
+player = Player(id=1, party_id=1)
 
 
 class LoggingWeavingObserver(ThingObserver):
@@ -108,7 +112,7 @@ weaving.observers.attach(LoggingWeavingObserver())
 
 class LEDAnimationWeavingObserver(ThingObserver):
     animation: AnimationSequence = None
-    
+
     def _set_animation(self, color):
         # reduce the color to half brightness
         starting_color = (color[0] // 2, color[1] // 2, color[2] // 2)
@@ -125,15 +129,41 @@ class LEDAnimationWeavingObserver(ThingObserver):
 
     def spell_ready(self, thing: WeavingThing, spell: Spell):
         self._set_animation(match_element(spell.element).color)
-        
+
     def spell_cast(self, thing: WeavingThing, spell: Spell):
-        # TODO: encode player, team, spell, and if it is aoe or not
-        infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])
+        print("Player aura: ", player.aura.levels, " casting spell: ", spell)
+        cast = CastSpell(spell)
+        player.aura.modify_cast(cast)
+        print("Modified spell: ", cast)
+
+        print("Aura before hit: ", player.aura.levels)
+        player.aura.apply_hit(cast)
+        print("Aura after hit: ", player.aura.levels)
+
+        # Test IR sending and receiving
+        # infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])
+
 
 animation_observer = LEDAnimationWeavingObserver()
 weaving.observers.attach(animation_observer)
 
+# elements = PrimaryElementLevels(100, 100, 100)
+
+# elements.subtract(PrimaryElementLevels(0, 50, 0))
+# print("Elements after subtract 1: ", elements)
+# elements.subtract(PrimaryElementLevels(65, 0, 0))
+# print("Elements after subtract 2: ", elements)
+# elements.subtract(PrimaryElementLevels(0, 100, 0))
+# print("Elements after subtract 3: ", elements)
+# elements.subtract(PrimaryElementLevels(0, 100, 0))
+# print("Elements after subtract 4: ", elements)
+
+last_tick = time.monotonic()
+
 while True:
+    ellapsed_time = time.monotonic() - last_tick
+    last_tick = time.monotonic()
+
     if sound and not mixer.voice[0].playing:
         print("Playing now!")
         mixer.voice[0].play(music)
@@ -160,8 +190,10 @@ while True:
     weaving.trigger_pressed = not trigger.value
     weaving.current_position = WeavingPosition.from_accelerometer(x, y, z)
     weaving.update()
-    
+
     received = infrared.receive()
     if received is not None:
         data, margin = received
         print("IR Data Received: ", [hex(b) for b in data], margin)
+
+    player.update(ellapsed_time)

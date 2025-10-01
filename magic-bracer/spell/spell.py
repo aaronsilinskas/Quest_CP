@@ -22,7 +22,7 @@ class WeavingPosition:
         return WeavingPosition.HORIZ_SIDE
 
 
-class WeavingElement:
+class SpellElement:
     WATER: int = const(1)
     EARTH: int = const(2)
     FIRE: int = const(3)
@@ -35,7 +35,7 @@ class WeavingElement:
     GRAVITY: int = const(10)
 
 
-class WeavingShape:
+class SpellShape:
     AREA_OF_EFFECT: int = const(1)
     OVER_SHORT_TIME: int = const(2)
     IMMEDIATE: int = const(3)
@@ -48,7 +48,7 @@ class WeavingShape:
     DELAYED_AREA_OF_EFFECT = const(10)
 
 
-class WeavingPurpose:
+class SpellPurpose:
     UNDEF_1: int = const(1)
     RECHARGE: int = const(2)
     DAMAGE: int = const(3)
@@ -108,113 +108,113 @@ WEAVING_POSITIONS = [
     WeavingPositionEntry(
         start_position=WeavingPosition.UP,
         end_position=WeavingPosition.UP,
-        element=WeavingElement.WATER,
-        shape=WeavingShape.AREA_OF_EFFECT,
-        purpose=WeavingPurpose.DAMAGE,
+        element=SpellElement.WATER,
+        shape=SpellShape.AREA_OF_EFFECT,
+        purpose=SpellPurpose.DAMAGE,
         color=(0, 0, 255),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.DOWN,
         end_position=WeavingPosition.DOWN,
-        element=WeavingElement.EARTH,
-        shape=WeavingShape.OVER_SHORT_TIME,
-        purpose=WeavingPurpose.RECHARGE,
+        element=SpellElement.EARTH,
+        shape=SpellShape.OVER_SHORT_TIME,
+        purpose=SpellPurpose.RECHARGE,
         color=(255, 255, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
         end_position=WeavingPosition.HORIZ_SIDE,
-        element=WeavingElement.FIRE,
-        shape=WeavingShape.IMMEDIATE,
-        purpose=WeavingPurpose.DAMAGE,
+        element=SpellElement.FIRE,
+        shape=SpellShape.IMMEDIATE,
+        purpose=SpellPurpose.DAMAGE,
         color=(255, 0, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_UP,
         end_position=WeavingPosition.HORIZ_UP,
-        element=WeavingElement.LIGHT,
-        shape=WeavingShape.OVER_LONG_TIME,
-        purpose=WeavingPurpose.INVEST,
+        element=SpellElement.LIGHT,
+        shape=SpellShape.OVER_LONG_TIME,
+        purpose=SpellPurpose.INVEST,
         color=(255, 255, 255),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_DOWN,
         end_position=WeavingPosition.HORIZ_DOWN,
-        element=WeavingElement.DARK,
-        shape=WeavingShape.REPEAT,
-        purpose=WeavingPurpose.RESISTANCE,
+        element=SpellElement.DARK,
+        shape=SpellShape.REPEAT,
+        purpose=SpellPurpose.RESISTANCE,
         color=(0, 0, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.DOWN,
         end_position=WeavingPosition.UP,
-        element=WeavingElement.ICE,
-        shape=WeavingShape.BLOCK_OVER_SHORT_TIME,
-        purpose=WeavingPurpose.DAMAGE,
+        element=SpellElement.ICE,
+        shape=SpellShape.BLOCK_OVER_SHORT_TIME,
+        purpose=SpellPurpose.DAMAGE,
         color=(0, 255, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
         end_position=WeavingPosition.UP,
-        element=WeavingElement.AIR,
-        shape=WeavingShape.AREA_OF_EFFECT_ON_TARGET,
-        purpose=WeavingPurpose.WEAKEN,
+        element=SpellElement.AIR,
+        shape=SpellShape.AREA_OF_EFFECT_ON_TARGET,
+        purpose=SpellPurpose.WEAKEN,
         color=(255, 0, 255),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
         end_position=WeavingPosition.DOWN,
-        element=WeavingElement.LIGHTNING,
-        shape=WeavingShape.CHAIN,
-        purpose=WeavingPurpose.STRENGTHEN,
+        element=SpellElement.LIGHTNING,
+        shape=SpellShape.CHAIN,
+        purpose=SpellPurpose.STRENGTHEN,
         color=(255, 128, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
         end_position=WeavingPosition.HORIZ_UP,
-        element=WeavingElement.TIME,
-        shape=WeavingShape.DELAYED,
-        purpose=WeavingPurpose.DAMAGE,
+        element=SpellElement.TIME,
+        shape=SpellShape.DELAYED,
+        purpose=SpellPurpose.DAMAGE,
         color=(128, 128, 128),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
         end_position=WeavingPosition.HORIZ_DOWN,
-        element=WeavingElement.GRAVITY,
-        shape=WeavingShape.DELAYED_AREA_OF_EFFECT,
-        purpose=WeavingPurpose.NULLIFY,
+        element=SpellElement.GRAVITY,
+        shape=SpellShape.DELAYED_AREA_OF_EFFECT,
+        purpose=SpellPurpose.NULLIFY,
         color=(64, 64, 64),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_UP,
         end_position=WeavingPosition.UP,
-        element=WeavingElement.AIR,
-        shape=WeavingShape.AREA_OF_EFFECT_ON_TARGET,
-        purpose=WeavingPurpose.WEAKEN,
+        element=SpellElement.AIR,
+        shape=SpellShape.AREA_OF_EFFECT_ON_TARGET,
+        purpose=SpellPurpose.WEAKEN,
         color=(255, 0, 255),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_UP,
         end_position=WeavingPosition.DOWN,
-        element=WeavingElement.LIGHTNING,
-        shape=WeavingShape.CHAIN,
-        purpose=WeavingPurpose.STRENGTHEN,
+        element=SpellElement.LIGHTNING,
+        shape=SpellShape.CHAIN,
+        purpose=SpellPurpose.STRENGTHEN,
         color=(255, 128, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_DOWN,
         end_position=WeavingPosition.UP,
-        element=WeavingElement.AIR,
-        shape=WeavingShape.AREA_OF_EFFECT_ON_TARGET,
-        purpose=WeavingPurpose.WEAKEN,
+        element=SpellElement.AIR,
+        shape=SpellShape.AREA_OF_EFFECT_ON_TARGET,
+        purpose=SpellPurpose.WEAKEN,
         color=(255, 0, 255),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_DOWN,
         end_position=WeavingPosition.DOWN,
-        element=WeavingElement.LIGHTNING,
-        shape=WeavingShape.CHAIN,
-        purpose=WeavingPurpose.STRENGTHEN,
+        element=SpellElement.LIGHTNING,
+        shape=SpellShape.CHAIN,
+        purpose=SpellPurpose.STRENGTHEN,
         color=(255, 128, 0),
     ),
 ]
@@ -261,9 +261,9 @@ def get_constant_name(cls, value: int) -> str:
 class Spell:
     def __init__(
         self,
-        element: int = WeavingElement.FIRE,
-        shape: int = WeavingShape.IMMEDIATE,
-        purpose: int = WeavingPurpose.DAMAGE,
+        element: int = SpellElement.FIRE,
+        shape: int = SpellShape.IMMEDIATE,
+        purpose: int = SpellPurpose.DAMAGE,
     ):
         self._element = element
         self._shape = shape
@@ -294,9 +294,9 @@ class Spell:
         self._purpose = value
 
     def __str__(self) -> str:
-        element_name = get_constant_name(WeavingElement, self._element)
-        shape_name = get_constant_name(WeavingShape, self._shape)
-        purpose_name = get_constant_name(WeavingPurpose, self._purpose)
+        element_name = get_constant_name(SpellElement, self._element)
+        shape_name = get_constant_name(SpellShape, self._shape)
+        purpose_name = get_constant_name(SpellPurpose, self._purpose)
         return (
-            f"Spell(spell={element_name}, shape={shape_name}, purpose={purpose_name})"
+            f"Spell(element={element_name}, shape={shape_name}, purpose={purpose_name})"
         )
