@@ -71,6 +71,14 @@ class PrimaryElementLevels:
                 else:
                     carryover -= self.earth
                     self.earth = 0
+        
+        # consider very small values as zero
+        if self.fire < 0.1:
+            self.fire = 0
+        if self.water < 0.1:
+            self.water = 0
+        if self.earth < 0.1:
+            self.earth = 0
 
     @property
     def fire(self) -> int:

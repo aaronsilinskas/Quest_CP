@@ -14,7 +14,7 @@ class CastSpell:
     @property
     def levels(self) -> PrimaryElementLevels:
         return self._levels
-    
+
     def __str__(self) -> str:
         return f"CastSpell(spell={self._spell}, levels={self._levels})"
 
@@ -34,7 +34,7 @@ class ActiveSpell:
 class Aura:
 
     def __init__(self):
-        self._levels: PrimaryElementLevels = PrimaryElementLevels()        
+        self._levels: PrimaryElementLevels = PrimaryElementLevels()
         self._active_spells: list[ActiveSpell] = []
 
     @property
@@ -59,16 +59,17 @@ class Aura:
         for spell in self._active_spells:
             spell.modify_cast(self, cast)
 
-    def apply_hit(self, cast: CastSpell):    
-        # innately resist the cast by half of aura levels
-        cast.levels.water -= max(1.0, self.levels.water / 2)
-        cast.levels.earth -= max(1.0, self.levels.earth / 2)
-        cast.levels.fire -= max(1.0, self.levels.fire / 2)
-        
+    def apply_hit(self, cast: CastSpell):
+        # innately resist the cast by a quarter of aura levels
+        cast.levels.water -= max(0, self.levels.water / 4)
+        cast.levels.earth -= max(0, self.levels.earth / 4)
+        cast.levels.fire -= max(0, self.levels.fire / 4)
+
         for spell in self._active_spells:
             spell.modify_hit(self, cast)
-        
-        
-        # TODO: this should handle the specific cast.spell purpose, and shape
-        # TODO: this code is for immediate apply offensive spell
+
+        # TODO: get purpose function that will apply to this aura
+        # TODO: apply the shape
+
+        # TODO: replace this IMMEDIATE hard-coding
         self.levels.subtract(cast.levels)

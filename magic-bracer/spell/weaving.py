@@ -32,14 +32,12 @@ class WeavingPositionEntry:
         element: int,
         shape: int,
         purpose: int,
-        color,
     ):
         self._start_position = start_position
         self._end_position = end_position
         self._element = element
         self._shape = shape
         self._purpose = purpose
-        self._color = color
 
     @property
     def start_position(self) -> int:
@@ -61,10 +59,6 @@ class WeavingPositionEntry:
     def purpose(self) -> int:
         return self._purpose
 
-    @property
-    def color(self) -> int:
-        return self._color
-
 
 WEAVING_POSITIONS = [
     WeavingPositionEntry(
@@ -73,7 +67,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.WATER,
         shape=SpellShape.AREA_OF_EFFECT,
         purpose=SpellPurpose.DAMAGE,
-        color=(0, 0, 255),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.DOWN,
@@ -81,7 +74,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.EARTH,
         shape=SpellShape.OVER_SHORT_TIME,
         purpose=SpellPurpose.RECHARGE,
-        color=(255, 255, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
@@ -89,7 +81,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.FIRE,
         shape=SpellShape.IMMEDIATE,
         purpose=SpellPurpose.DAMAGE,
-        color=(255, 0, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_UP,
@@ -97,7 +88,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.LIGHT,
         shape=SpellShape.OVER_LONG_TIME,
         purpose=SpellPurpose.INVEST,
-        color=(255, 255, 255),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_DOWN,
@@ -105,7 +95,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.DARK,
         shape=SpellShape.REPEAT,
         purpose=SpellPurpose.RESISTANCE,
-        color=(0, 0, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.DOWN,
@@ -113,7 +102,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.ICE,
         shape=SpellShape.BLOCK_OVER_SHORT_TIME,
         purpose=SpellPurpose.DAMAGE,
-        color=(0, 255, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
@@ -121,7 +109,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.AIR,
         shape=SpellShape.AREA_OF_EFFECT_ON_TARGET,
         purpose=SpellPurpose.WEAKEN,
-        color=(255, 0, 255),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
@@ -129,7 +116,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.LIGHTNING,
         shape=SpellShape.CHAIN,
         purpose=SpellPurpose.STRENGTHEN,
-        color=(255, 128, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
@@ -137,7 +123,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.TIME,
         shape=SpellShape.DELAYED,
         purpose=SpellPurpose.DAMAGE,
-        color=(128, 128, 128),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
@@ -145,7 +130,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.GRAVITY,
         shape=SpellShape.DELAYED_AREA_OF_EFFECT,
         purpose=SpellPurpose.NULLIFY,
-        color=(64, 64, 64),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_UP,
@@ -153,7 +137,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.AIR,
         shape=SpellShape.AREA_OF_EFFECT_ON_TARGET,
         purpose=SpellPurpose.WEAKEN,
-        color=(255, 0, 255),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_UP,
@@ -161,7 +144,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.LIGHTNING,
         shape=SpellShape.CHAIN,
         purpose=SpellPurpose.STRENGTHEN,
-        color=(255, 128, 0),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_DOWN,
@@ -169,7 +151,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.AIR,
         shape=SpellShape.AREA_OF_EFFECT_ON_TARGET,
         purpose=SpellPurpose.WEAKEN,
-        color=(255, 0, 255),
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_DOWN,
@@ -177,7 +158,6 @@ WEAVING_POSITIONS = [
         element=SpellElement.LIGHTNING,
         shape=SpellShape.CHAIN,
         purpose=SpellPurpose.STRENGTHEN,
-        color=(255, 128, 0),
     ),
 ]
 
