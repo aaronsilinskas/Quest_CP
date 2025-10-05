@@ -23,7 +23,7 @@ from infrared import Infrared
 from player import Player
 from spell.aura import Aura, SpellCast, SpellHit
 from spell.spell_color import color_for_element, color_for_shape
-from spell.aura_modifier import modify_aura
+from spell.aura_shape import modify_aura
 
 # I2C
 i2c = board.I2C()
@@ -80,7 +80,7 @@ i2s.play(mixer)
 last_imu_log = time.monotonic()
 
 # Player and Weaving State
-weaving = WeavingThing(starting_level=2)
+weaving = WeavingThing(starting_level=3)
 player = Player(id=1, party_id=1)
 
 

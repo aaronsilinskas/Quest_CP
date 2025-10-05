@@ -42,7 +42,7 @@ class PrimaryElementLevels:
         fire_delta: float = self.fire - amount.fire
         self.fire = max(0, fire_delta)
 
-        leftover = PrimaryElementLevels()
+        remainder = PrimaryElementLevels()
         if distribute:
             if water_delta < 0:
                 water_to_fire = self.fire + water_delta
@@ -50,35 +50,54 @@ class PrimaryElementLevels:
                 if water_to_fire < 0:
                     water_to_earth = self.earth + water_to_fire
                     self.earth = max(0, water_to_earth)
-                    leftover.water = abs(water_to_earth) if water_to_earth < 0 else 0
+                    remainder.water = abs(water_to_earth) if water_to_earth < 0 else 0
             if earth_delta < 0:
                 earth_to_water = self.water + earth_delta
                 self.water = max(0, earth_to_water)
                 if earth_to_water < 0:
                     earth_to_fire = self.fire + earth_to_water
                     self.fire = max(0, earth_to_fire)
-                    leftover.earth = abs(earth_to_fire) if earth_to_fire < 0 else 0
+                    remainder.earth = abs(earth_to_fire) if earth_to_fire < 0 else 0
             if fire_delta < 0:
                 fire_to_earth = self.earth + fire_delta
                 self.earth = max(0, fire_to_earth)
                 if fire_to_earth < 0:
                     fire_to_water = self.water + fire_to_earth
                     self.water = max(0, fire_to_water)
-                    leftover.fire = abs(fire_to_water) if fire_to_water < 0 else 0
+                    remainder.fire = abs(fire_to_water) if fire_to_water < 0 else 0
         else:
-            leftover.water = abs(water_delta) if water_delta < 0 else 0
-            leftover.earth = abs(earth_delta) if earth_delta < 0 else 0
-            leftover.fire = abs(fire_delta) if fire_delta < 0 else 0
+            remainder.water = abs(water_delta) if water_delta < 0 else 0
+            remainder.earth = abs(earth_delta) if earth_delta < 0 else 0
+            remainder.fire = abs(fire_delta) if fire_delta < 0 else 0
 
         # consider very small values as zero
-        if self.water < 0.1:
+        if self.water < 1:
             self.water = 0
-        if self.earth < 0.1:
+        if self.earth < 1:
             self.earth = 0
-        if self.fire < 0.1:
+        if self.fire < 1:
             self.fire = 0
 
-        return leftover
+        return remainder
+
+    def increase(self, amount: "PrimaryElementLevels") -> "PrimaryElementLevels":
+        """Increase levels by the given amount."""
+        self.water += amount.water
+        self.earth += amount.earth
+        self.fire += amount.fire
+
+        remainder = PrimaryElementLevels()
+        if self.water > 100:
+            remainder.water = self.water - 100
+            self.water = 100
+        if self.earth > 100:
+            remainder.earth = self.earth - 100
+            self.earth = 100
+        if self.fire > 100:
+            remainder.fire = self.fire - 100
+            self.fire = 100
+
+        return remainder
 
     @property
     def fire(self) -> int:

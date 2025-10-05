@@ -16,33 +16,37 @@ class SpellElement:
 
 
 class SpellShape:
-    AREA_OF_EFFECT: int = const(1)
-    OVER_SHORT_TIME: int = const(2)
-    IMMEDIATE: int = const(3)
-    OVER_LONG_TIME: int = const(4)
-    REPEAT: int = const(5)
+    AREA_OF_EFFECT: int = const(1)  # instant cast to surrounding targets
+    OVER_SHORT_TIME: int = const(2)  # a cast that applies its effect over a short time
+    IMMEDIATE: int = const(3)  # a cast that applies its effect instantly
+    OVER_LONG_TIME: int = const(4)  # a cast that applies its effect over a long time
+    REPEAT: int = const(5)  # a divide a cast over several short bursts
     BLOCK_OVER_SHORT_TIME = const(6)
-    AREA_OF_EFFECT_ON_TARGET = const(7)
-    CHAIN = const(8)
-    DELAYED = const(9)
-    DELAYED_AREA_OF_EFFECT = const(10)
+    AREA_OF_EFFECT_ON_TARGET = const(7)  # instant cast to surrounding targets
+    CHAIN = const(8)  # delayed cast to surrounding targets
+    DELAYED = const(9)  # cast is applied after a delay
+    DELAYED_AREA_OF_EFFECT = const(10)  # AOE is applied after a delay
 
 
 class SpellPurpose:
     UNDEF_1: int = const(1)
     UNDEF_2: int = const(2)
-    DAMAGE: int = const(3) # reduce levels of an aura
-    INVEST: int = const(4) # increase levels of an aura
-    RESISTANCE: int = const(5) # temporarily reduce levels of a hit
+    DAMAGE: int = const(3)  # reduce levels of an aura
+    INVEST: int = const(4)  # increase levels of an aura
+    RESISTANCE: int = const(5)  # temporarily reduce levels of a hit
     UNDEF_3: int = const(6)
-    WEAKEN: int = const(7) # temporarily reduce levels of a a cast
-    STRENGTHEN: int = const(8) # temporarily increase levels of a cast
+    WEAKEN: int = const(7)  # temporarily reduce levels of a a cast
+    STRENGTHEN: int = const(8)  # temporarily increase levels of a cast
     UNDEF_4: int = const(9)
     UNDEF_5: int = const(10)
 
     @staticmethod
     def is_friendly(purpose: int) -> bool:
-        return purpose in {SpellPurpose.INVEST, SpellPurpose.RESISTANCE, SpellPurpose.STRENGTHEN}
+        return purpose in {
+            SpellPurpose.INVEST,
+            SpellPurpose.RESISTANCE,
+            SpellPurpose.STRENGTHEN,
+        }
 
 
 class Spell:
