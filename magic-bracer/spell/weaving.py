@@ -73,7 +73,7 @@ WEAVING_POSITIONS = [
         end_position=WeavingPosition.DOWN,
         element=SpellElement.EARTH,
         shape=SpellShape.OVER_SHORT_TIME,
-        purpose=SpellPurpose.RECHARGE,
+        purpose=SpellPurpose.DAMAGE,
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_SIDE,
@@ -129,7 +129,7 @@ WEAVING_POSITIONS = [
         end_position=WeavingPosition.HORIZ_DOWN,
         element=SpellElement.GRAVITY,
         shape=SpellShape.DELAYED_AREA_OF_EFFECT,
-        purpose=SpellPurpose.NULLIFY,
+        purpose=SpellPurpose.DAMAGE,
     ),
     WeavingPositionEntry(
         start_position=WeavingPosition.HORIZ_UP,

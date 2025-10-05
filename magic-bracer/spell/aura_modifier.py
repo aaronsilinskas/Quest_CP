@@ -16,18 +16,97 @@ class AuraPurposeModifier:
 
 class DamageAuraPurposeModifier(AuraPurposeModifier):
     def apply(self, levels: PrimaryElementLevels, aura: Aura):
-        aura.levels.subtract(levels)
+        aura.levels.reduce(levels, distribute=True)
         print("Aura after damage: ", aura.levels)
 
 
+class InvestAuraPurposeModifier(AuraPurposeModifier):
+    def apply(self, levels: PrimaryElementLevels, aura: Aura):
+        aura.levels.increase(levels)
+        print("Aura after invest: ", aura.levels)
+
+
+class ResistanceActiveSpell(ActiveSpell):
+    def __init__(self, resistance: PrimaryElementLevels):
+        self.resistance = resistance
+        self.duration = 30.0  # lasts for 30 seconds
+
+    def update(self, elapsed_time: float, aura: Aura) -> bool:
+        if self.resistance.empty():
+            print("ResistanceActiveSpell completed.")
+            return True
+        self.duration -= elapsed_time
+        if self.duration <= 0:
+            print("ResistanceActiveSpell duration ended.")
+            return True
+        return False
+
+    def modify_hit(self, aura: Aura, hit: SpellHit):
+        remainder = hit.levels.reduce(self.resistance)
+        self.resistance = remainder
+        print(
+            f"ResistanceActiveSpell modified hit to: {hit.levels}, remaining resistance: {self.resistance}"
+        )
+
+
+class ResistanceAuraPurposeModifier(AuraPurposeModifier):
+    def apply(self, levels: PrimaryElementLevels, aura: Aura):
+        print("Applying resistance to aura: ", levels)
+        aura.active_spells.append(ResistanceActiveSpell(levels))
+
+
+class WeakenActiveSpell(ActiveSpell):
+    def __init__(self, amount: PrimaryElementLevels):
+        self.amount = amount
+        self.duration = 30.0  # lasts for 30 seconds
+
+    def update(self, elapsed_time: float, aura: Aura) -> bool:
+        self.duration -= elapsed_time
+        if self.duration <= 0:
+            print("WeakenActiveSpell duration ended.")
+            return True
+        return False
+
+    def modify_cast(self, aura: Aura, cast: SpellCast):
+        cast.levels.reduce(self.amount)
+        print(f"WeakenActiveSpell modified cast to: {cast.levels}")
+
+
+class WeakenAuraPurposeModifier(AuraPurposeModifier):
+    def apply(self, levels: PrimaryElementLevels, aura: Aura):
+        print("Applying weaken to aura: ", levels)
+        aura.active_spells.append(WeakenActiveSpell(levels))
+
+
+class StrengthenActiveSpell(ActiveSpell):
+    def __init__(self, amount: PrimaryElementLevels):
+        self.amount = amount
+        self.duration = 30.0  # lasts for 30 seconds
+
+    def update(self, elapsed_time: float, aura: Aura) -> bool:
+        self.duration -= elapsed_time
+        if self.duration <= 0:
+            print("StrengthenActiveSpell duration ended.")
+            return True
+        return False
+
+    def modify_cast(self, aura: Aura, cast: SpellCast):
+        cast.levels.increase(self.amount)
+        print(f"StrengthenActiveSpell modified cast to: {cast.levels}")
+
+
+class StrengthenAuraPurposeModifier(AuraPurposeModifier):
+    def apply(self, levels: PrimaryElementLevels, aura: Aura):
+        print("Applying strengthen to aura: ", levels)
+        aura.active_spells.append(StrengthenActiveSpell(levels))
+
+
 AURA_PURPOSE_MODIFIERS = {
-    # RECHARGE: int = const(2)
     SpellPurpose.DAMAGE: DamageAuraPurposeModifier(),
-    # INVEST: int = const(4)
-    # RESISTANCE: int = const(5)
-    # WEAKEN: int = const(7)
-    # STRENGTHEN: int = const(8)
-    # NULLIFY: int = const(10)
+    SpellPurpose.INVEST: InvestAuraPurposeModifier(),
+    SpellPurpose.RESISTANCE: ResistanceAuraPurposeModifier(),
+    SpellPurpose.WEAKEN: WeakenAuraPurposeModifier(),
+    SpellPurpose.STRENGTHEN: StrengthenAuraPurposeModifier(),
 }
 
 
@@ -76,16 +155,16 @@ class OverShortTimeActiveSpell(ActiveSpell):
     def __init__(self, hit: SpellHit):
         self.hit = hit
         self.duration = 10.0  # total duration of the effect
-        self.ellapsed_since_tick = 0.0
+        self.elapsed_since_tick = 0.0
         self.tick_levels = PrimaryElementLevels()
         self.tick_levels.water = hit.levels.water / self.duration
         self.tick_levels.earth = hit.levels.earth / self.duration
         self.tick_levels.fire = hit.levels.fire / self.duration
 
-    def update(self, ellapsed_time: float, aura: Aura) -> bool:
-        self.ellapsed_since_tick += ellapsed_time
-        if self.ellapsed_since_tick >= 1.0:  # apply effect every
-            self.ellapsed_since_tick -= 1.0
+    def update(self, elapsed_time: float, aura: Aura) -> bool:
+        self.elapsed_since_tick += elapsed_time
+        if self.elapsed_since_tick >= 1.0:  # apply effect every
+            self.elapsed_since_tick -= 1.0
 
             print(f"Applying over short time tick: {self.tick_levels} to aura.")
             apply_purpose_to_aura(self.hit.spell.purpose, self.tick_levels, aura)
@@ -130,4 +209,4 @@ def modify_aura(hit: SpellHit, aura: Aura, caster: AuraCaster):
     if modifier:
         modifier.apply(hit, aura, caster)
     else:
-        raise ValueError(f"No modifier found for shape: {shape}")
+        raise ValueError(f"No shape modifier found for shape: {shape}")

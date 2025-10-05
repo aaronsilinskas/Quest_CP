@@ -30,19 +30,19 @@ class SpellShape:
 
 class SpellPurpose:
     UNDEF_1: int = const(1)
-    RECHARGE: int = const(2)
-    DAMAGE: int = const(3)
-    INVEST: int = const(4)
-    RESISTANCE: int = const(5)
+    UNDEF_2: int = const(2)
+    DAMAGE: int = const(3) # reduce levels of an aura
+    INVEST: int = const(4) # increase levels of an aura
+    RESISTANCE: int = const(5) # temporarily reduce levels of a hit
     UNDEF_3: int = const(6)
-    WEAKEN: int = const(7)
-    STRENGTHEN: int = const(8)
+    WEAKEN: int = const(7) # temporarily reduce levels of a a cast
+    STRENGTHEN: int = const(8) # temporarily increase levels of a cast
     UNDEF_4: int = const(9)
-    NULLIFY: int = const(10)
+    UNDEF_5: int = const(10)
 
     @staticmethod
     def is_friendly(purpose: int) -> bool:
-        return purpose in {SpellPurpose.RECHARGE, SpellPurpose.INVEST, SpellPurpose.RESISTANCE, SpellPurpose.STRENGTHEN}
+        return purpose in {SpellPurpose.INVEST, SpellPurpose.RESISTANCE, SpellPurpose.STRENGTHEN}
 
 
 class Spell:

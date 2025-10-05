@@ -44,7 +44,7 @@ class SpellHit:
 
 class ActiveSpell:
 
-    def update(self, ellapsed_time: float, aura: "Aura") -> bool:
+    def update(self, elapsed_time: float, aura: "Aura") -> bool:
         return True
 
     def modify_cast(self, aura: "Aura", cast: SpellCast):
@@ -61,7 +61,7 @@ class Aura:
         self._active_spells: list[ActiveSpell] = []
         self._ambient_magic = ambient_magic
         self._level_max = level_max
-        self._ellapsed_since_ambient_tick = 0.0
+        self._elapsed_since_ambient_tick = 0.0
 
     @property
     def levels(self) -> PrimaryElementLevels:
@@ -79,10 +79,10 @@ class Aura:
     def level_max(self) -> float:
         return self._level_max
 
-    def update(self, ellapsed_time: float):
-        self._ellapsed_since_ambient_tick += ellapsed_time
-        if self._ellapsed_since_ambient_tick >= 1.0:  # apply ambient magic every second
-            self._ellapsed_since_ambient_tick -= 1.0
+    def update(self, elapsed_time: float):
+        self._elapsed_since_ambient_tick += elapsed_time
+        if self._elapsed_since_ambient_tick >= 1.0:  # apply ambient magic every second
+            self._elapsed_since_ambient_tick -= 1.0
             
             # apply ambient magic to aura levels
             self._levels.water = min(self._ambient_magic + self._levels.water, self._level_max)
@@ -90,7 +90,7 @@ class Aura:
             self._levels.fire = min(self._ambient_magic + self._levels.fire, self._level_max)
 
         for spell in self._active_spells:
-            if spell.update(ellapsed_time, self):
+            if spell.update(elapsed_time, self):
                 self._active_spells.remove(spell)
 
     def modify_cast(self, cast: SpellCast):

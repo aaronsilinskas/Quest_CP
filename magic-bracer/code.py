@@ -174,7 +174,7 @@ weaving.observers.attach(animation_observer)
 last_tick = time.monotonic()
 
 while True:
-    ellapsed_time = time.monotonic() - last_tick
+    elapsed_time = time.monotonic() - last_tick
     last_tick = time.monotonic()
 
     if sound and not mixer.voice[0].playing:
@@ -209,4 +209,4 @@ while True:
         data, margin = received
         print("IR Data Received: ", [hex(b) for b in data], margin)
 
-    player.update(ellapsed_time)
+    player.update(elapsed_time)

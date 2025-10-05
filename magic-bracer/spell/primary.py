@@ -30,55 +30,55 @@ class PrimaryElementLevels:
         else:
             raise ValueError(f"Unknown element: {element}")
 
-    def subtract(self, other: "PrimaryElementLevels"):
-        fire_delta: float = self.fire - other.fire
-        self.fire = max(0, fire_delta)
-        water_delta: float = self.water - other.water
+    def reduce(
+        self, amount: "PrimaryElementLevels", distribute: bool = False
+    ) -> "PrimaryElementLevels":
+        """Reduce levels by the given amount, returning amount of left over. If distribute is True,
+        distribute excess reduction evenly across other non-zero elements."""
+        water_delta: float = self.water - amount.water
         self.water = max(0, water_delta)
-        earth_delta: float = self.earth - other.earth
+        earth_delta: float = self.earth - amount.earth
         self.earth = max(0, earth_delta)
+        fire_delta: float = self.fire - amount.fire
+        self.fire = max(0, fire_delta)
 
-        carryover = abs(fire_delta) if fire_delta < 0 else 0
-        carryover += abs(water_delta) if water_delta < 0 else 0
-        carryover += abs(earth_delta) if earth_delta < 0 else 0
+        leftover = PrimaryElementLevels()
+        if distribute:
+            if water_delta < 0:
+                water_to_fire = self.fire + water_delta
+                self.fire = max(0, water_to_fire)
+                if water_to_fire < 0:
+                    water_to_earth = self.earth + water_to_fire
+                    self.earth = max(0, water_to_earth)
+                    leftover.water = abs(water_to_earth) if water_to_earth < 0 else 0
+            if earth_delta < 0:
+                earth_to_water = self.water + earth_delta
+                self.water = max(0, earth_to_water)
+                if earth_to_water < 0:
+                    earth_to_fire = self.fire + earth_to_water
+                    self.fire = max(0, earth_to_fire)
+                    leftover.earth = abs(earth_to_fire) if earth_to_fire < 0 else 0
+            if fire_delta < 0:
+                fire_to_earth = self.earth + fire_delta
+                self.earth = max(0, fire_to_earth)
+                if fire_to_earth < 0:
+                    fire_to_water = self.water + fire_to_earth
+                    self.water = max(0, fire_to_water)
+                    leftover.fire = abs(fire_to_water) if fire_to_water < 0 else 0
+        else:
+            leftover.water = abs(water_delta) if water_delta < 0 else 0
+            leftover.earth = abs(earth_delta) if earth_delta < 0 else 0
+            leftover.fire = abs(fire_delta) if fire_delta < 0 else 0
 
-        # distribute elements not yet subtracted evenly across non-zero elements
-        while carryover > 0:
-            non_zero_elements = sum(
-                1 for level in (self.fire, self.water, self.earth) if level > 0
-            )
-            if non_zero_elements == 0:
-                break
-            distribute = carryover / non_zero_elements
-            if self.fire > 0:
-                if self.fire >= distribute:
-                    self.fire = self.fire - distribute
-                    carryover -= distribute
-                else:
-                    carryover -= self.fire
-                    self.fire = 0
-            if self.water > 0 and carryover > 0:
-                if self.water >= distribute:
-                    self.water = self.water - distribute
-                    carryover -= distribute
-                else:
-                    carryover -= self.water
-                    self.water = 0
-            if self.earth > 0 and carryover > 0:
-                if self.earth >= distribute:
-                    self.earth = self.earth - distribute
-                    carryover -= distribute
-                else:
-                    carryover -= self.earth
-                    self.earth = 0
-        
         # consider very small values as zero
-        if self.fire < 0.1:
-            self.fire = 0
         if self.water < 0.1:
             self.water = 0
         if self.earth < 0.1:
             self.earth = 0
+        if self.fire < 0.1:
+            self.fire = 0
+
+        return leftover
 
     @property
     def fire(self) -> int:
@@ -103,6 +103,10 @@ class PrimaryElementLevels:
     @earth.setter
     def earth(self, value: int):
         self._earth = max(0, value)
+
+    @property
+    def empty(self) -> bool:
+        return self._fire == 0 and self._water == 0 and self._earth == 0
 
     def __str__(self) -> str:
         return f"Elements(fire={self._fire}, water={self._water}, earth={self._earth})"

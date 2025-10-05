@@ -20,5 +20,5 @@ class Player:
     def aura(self) -> Aura:
         return self._aura
 
-    def update(self, ellapsed_time: float):
-        self._aura.update(ellapsed_time)
+    def update(self, elapsed_time: float):
+        self._aura.update(elapsed_time)

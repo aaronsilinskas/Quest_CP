@@ -15,13 +15,13 @@ SPELL_COLORS = [
     SpellColorEntry(
         element=SpellElement.WATER,
         shape=SpellShape.AREA_OF_EFFECT,
-        purpose=SpellPurpose.DAMAGE,
+        purpose=SpellPurpose.UNDEF_1,
         color=(0, 0, 255),
     ),
     SpellColorEntry(
         element=SpellElement.EARTH,
         shape=SpellShape.OVER_SHORT_TIME,
-        purpose=SpellPurpose.RECHARGE,
+        purpose=SpellPurpose.UNDEF_2,
         color=(255, 255, 0),
     ),
     SpellColorEntry(
@@ -45,7 +45,7 @@ SPELL_COLORS = [
     SpellColorEntry(
         element=SpellElement.ICE,
         shape=SpellShape.BLOCK_OVER_SHORT_TIME,
-        purpose=SpellPurpose.DAMAGE,
+        purpose=SpellPurpose.UNDEF_3,
         color=(0, 255, 0),
     ),
     SpellColorEntry(
@@ -63,13 +63,13 @@ SPELL_COLORS = [
     SpellColorEntry(
         element=SpellElement.TIME,
         shape=SpellShape.DELAYED,
-        purpose=SpellPurpose.DAMAGE,
+        purpose=SpellPurpose.UNDEF_4,
         color=(128, 128, 128),
     ),
     SpellColorEntry(
         element=SpellElement.GRAVITY,
         shape=SpellShape.DELAYED_AREA_OF_EFFECT,
-        purpose=SpellPurpose.NULLIFY,
+        purpose=SpellPurpose.UNDEF_5,
         color=(64, 64, 64),
     ),
     SpellColorEntry(
