@@ -40,6 +40,10 @@ class SpellPurpose:
     UNDEF_4: int = const(9)
     NULLIFY: int = const(10)
 
+    @staticmethod
+    def is_friendly(purpose: int) -> bool:
+        return purpose in {SpellPurpose.RECHARGE, SpellPurpose.INVEST, SpellPurpose.RESISTANCE, SpellPurpose.STRENGTHEN}
+
 
 class Spell:
     def __init__(

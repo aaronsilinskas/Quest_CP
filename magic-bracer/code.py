@@ -16,13 +16,14 @@ from adafruit_led_animation.sequence import AnimationSequence
 from adafruit_led_animation.animation.sparklepulse import SparklePulse
 import adafruit_lis3dh
 from spell.weaving_thing import WeavingThing
-from spell.spell import Spell
+from spell.spell import Spell, SpellPurpose
 from spell.weaving import WeavingPosition
 from state_of_things import ThingObserver
 from infrared import Infrared
 from player import Player
-from spell.aura import CastSpell
+from spell.aura import Aura, SpellCast, SpellHit
 from spell.spell_color import color_for_element, color_for_shape
+from spell.aura_modifier import modify_aura
 
 # I2C
 i2c = board.I2C()
@@ -79,7 +80,7 @@ i2s.play(mixer)
 last_imu_log = time.monotonic()
 
 # Player and Weaving State
-weaving = WeavingThing(starting_level=1)
+weaving = WeavingThing(starting_level=2)
 player = Player(id=1, party_id=1)
 
 
@@ -104,6 +105,20 @@ class LoggingWeavingObserver(ThingObserver):
 weaving.observers.attach(LoggingWeavingObserver())
 
 
+class HardcodedAuraCaster:
+    def cast(self, cast: SpellCast, aura: Aura, friendly: bool):
+        print("HardcodedAuraCaster casting: ", cast)
+
+        hit = SpellHit(cast.spell, cast.levels, friendly)
+
+        print("Aura before hit: ", player.aura.levels)
+        modify_aura(hit, player.aura, self)
+        print("Aura after hit: ", player.aura.levels)
+
+
+caster = HardcodedAuraCaster()
+
+
 class LEDAnimationWeavingObserver(ThingObserver):
     animation: AnimationSequence = None
 
@@ -125,13 +140,17 @@ class LEDAnimationWeavingObserver(ThingObserver):
         self._set_animation(color_for_element(spell.element).color)
 
     def spell_cast(self, thing: WeavingThing, spell: Spell):
-        print("Player aura: ", player.aura.levels, " casting spell: ", spell)
-        cast = CastSpell(spell)
+        print("Player aura: ", player.aura.levels)
+        cast = SpellCast(spell)
         player.aura.modify_cast(cast)
-        print("Modified spell: ", cast)
+        print("Modified cast: ", cast.levels)
 
         print("Aura before hit: ", player.aura.levels)
-        player.aura.apply_hit(cast)
+        # temporarily harcode friendliness to purpose instead of team
+        friendly = SpellPurpose.is_friendly(spell.purpose)
+
+        hit = SpellHit(spell, cast.levels, friendly)
+        modify_aura(hit, player.aura, caster)
         print("Aura after hit: ", player.aura.levels)
 
         # Test IR sending and receiving
