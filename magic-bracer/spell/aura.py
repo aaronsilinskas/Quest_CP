@@ -1,3 +1,4 @@
+from encoder import BitEncoder
 from spell.spell import Spell
 from spell.primary import PrimaryElementLevels
 
@@ -5,7 +6,13 @@ from spell.primary import PrimaryElementLevels
 class SpellCast:
     def __init__(self, spell: Spell, levels: PrimaryElementLevels = None):
         self._spell = spell
-        self._levels = levels if levels else PrimaryElementLevels.from_element(spell.element)
+        self._levels = (
+            levels if levels else PrimaryElementLevels.from_element(spell.element)
+        )
+
+    def encode(self, encoder: BitEncoder):
+        self.spell.encode(encoder)
+        self.levels.encode(encoder)
 
     @property
     def spell(self) -> Spell:
@@ -70,11 +77,11 @@ class Aura:
     @property
     def active_spells(self) -> list[ActiveSpell]:
         return self._active_spells
-    
+
     @property
     def ambient_magic(self) -> float:
         return self._ambient_magic
-    
+
     @property
     def level_max(self) -> float:
         return self._level_max
@@ -83,11 +90,17 @@ class Aura:
         self._elapsed_since_ambient_tick += elapsed_time
         if self._elapsed_since_ambient_tick >= 1.0:  # apply ambient magic every second
             self._elapsed_since_ambient_tick -= 1.0
-            
+
             # apply ambient magic to aura levels
-            self._levels.water = min(self._ambient_magic + self._levels.water, self._level_max)
-            self._levels.earth = min(self._ambient_magic + self._levels.earth, self._level_max)
-            self._levels.fire = min(self._ambient_magic + self._levels.fire, self._level_max)
+            self._levels.water = min(
+                self._ambient_magic + self._levels.water, self._level_max
+            )
+            self._levels.earth = min(
+                self._ambient_magic + self._levels.earth, self._level_max
+            )
+            self._levels.fire = min(
+                self._ambient_magic + self._levels.fire, self._level_max
+            )
 
         for spell in self._active_spells:
             if spell.update(elapsed_time, self):

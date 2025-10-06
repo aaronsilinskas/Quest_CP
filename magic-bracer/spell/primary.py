@@ -1,3 +1,4 @@
+from encoder import BitEncoder
 from spell.spell import SpellElement
 
 
@@ -98,6 +99,11 @@ class PrimaryElementLevels:
             self.fire = 100
 
         return remainder
+
+    def encode(self, encoder: BitEncoder):
+        encoder.add_bits(int(self._fire), 8)
+        encoder.add_bits(int(self._water), 8)
+        encoder.add_bits(int(self._earth), 8)
 
     @property
     def fire(self) -> int:

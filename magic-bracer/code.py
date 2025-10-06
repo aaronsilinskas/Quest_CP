@@ -5,6 +5,8 @@
 import time
 import board
 import digitalio
+from encoder import BitEncoder
+from fixtures import HardcodedWeavingObserver, LoggingWeavingObserver
 import pulseio
 import keypad
 import audiomixer
@@ -84,39 +86,7 @@ weaving = WeavingThing(starting_level=3)
 player = Player(id=1, party_id=1)
 
 
-class LoggingWeavingObserver(ThingObserver):
-    def state_changed(self, thing: WeavingThing, old_state, new_state):
-        # print("State changed on ", thing.name, " from ", old_state.name, " to ", new_state.name)
-        pass
-
-    def spell_cast(self, thing: WeavingThing, spell: Spell):
-        print("CAST: ", spell)
-
-    def spell_selected(self, thing: WeavingThing, spell: Spell):
-        print("Spell selected: ", spell)
-
-    def shape_selected(self, thing: WeavingThing, spell: Spell):
-        print("Shape selected: ", spell)
-
-    def spell_ready(self, thing: WeavingThing, spell: Spell):
-        print("Spell Ready: ", spell)
-
-
 weaving.observers.attach(LoggingWeavingObserver())
-
-
-class HardcodedAuraCaster:
-    def cast(self, cast: SpellCast, aura: Aura, friendly: bool):
-        print("HardcodedAuraCaster casting: ", cast)
-
-        hit = SpellHit(cast.spell, cast.levels, friendly)
-
-        print("Aura before hit: ", player.aura.levels)
-        modify_aura(hit, player.aura, self)
-        print("Aura after hit: ", player.aura.levels)
-
-
-caster = HardcodedAuraCaster()
 
 
 class LEDAnimationWeavingObserver(ThingObserver):
@@ -140,36 +110,32 @@ class LEDAnimationWeavingObserver(ThingObserver):
         self._set_animation(color_for_element(spell.element).color)
 
     def spell_cast(self, thing: WeavingThing, spell: Spell):
-        print("Player aura: ", player.aura.levels)
-        cast = SpellCast(spell)
-        player.aura.modify_cast(cast)
-        print("Modified cast: ", cast.levels)
-
-        print("Aura before hit: ", player.aura.levels)
-        # temporarily harcode friendliness to purpose instead of team
-        friendly = SpellPurpose.is_friendly(spell.purpose)
-
-        hit = SpellHit(spell, cast.levels, friendly)
-        modify_aura(hit, player.aura, caster)
-        print("Aura after hit: ", player.aura.levels)
-
-        # Test IR sending and receiving
-        # infrared.send([0b11111111, 0b01010101, 0b11001100, 0b00000000])
+        pass
 
 
 animation_observer = LEDAnimationWeavingObserver()
 weaving.observers.attach(animation_observer)
 
-# elements = PrimaryElementLevels(100, 100, 100)
 
-# elements.subtract(PrimaryElementLevels(0, 50, 0))
-# print("Elements after subtract 1: ", elements)
-# elements.subtract(PrimaryElementLevels(65, 0, 0))
-# print("Elements after subtract 2: ", elements)
-# elements.subtract(PrimaryElementLevels(0, 100, 0))
-# print("Elements after subtract 3: ", elements)
-# elements.subtract(PrimaryElementLevels(0, 100, 0))
-# print("Elements after subtract 4: ", elements)
+class InfraredWeavingObserver(ThingObserver):
+    def spell_cast(self, thing: WeavingThing, spell: Spell):
+        print("Player aura: ", player.aura.levels)
+        cast = SpellCast(spell)
+        player.aura.modify_cast(cast)
+        print("Modified cast: ", cast.levels)
+
+        encoder = BitEncoder()
+        player.encode_ids(encoder)
+        cast.encode(encoder)
+
+        encoded_bytes = encoder.to_bytes()
+        print("SpellCast encoded bytes: ", [hex(b) for b in encoded_bytes])
+        infrared.send(encoded_bytes)
+
+
+weaving.observers.attach(InfraredWeavingObserver())
+
+weaving.observers.attach(HardcodedWeavingObserver(player))
 
 last_tick = time.monotonic()
 
