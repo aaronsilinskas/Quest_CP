@@ -5,7 +5,7 @@
 import time
 import board
 import digitalio
-from encoder import BitEncoder
+from encoder import EVENT_SPELL, BitEncoder
 from fixtures import HardcodedWeavingObserver, LoggingWeavingObserver
 import pulseio
 import keypad
@@ -125,11 +125,12 @@ class InfraredWeavingObserver(ThingObserver):
         print("Modified cast: ", cast.levels)
 
         encoder = BitEncoder()
+        encoder.add_event(EVENT_SPELL)
         player.encode_ids(encoder)
         cast.encode(encoder)
 
         encoded_bytes = encoder.to_bytes()
-        print("SpellCast encoded bytes: ", [hex(b) for b in encoded_bytes])
+        print("SpellCast encoded bytes: ", [bin(b) for b in encoded_bytes])
         infrared.send(encoded_bytes)
 
 
