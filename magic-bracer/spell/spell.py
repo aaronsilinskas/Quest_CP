@@ -1,4 +1,4 @@
-from encoder import BitEncoder
+from encoder import BitDecoder, BitEncoder
 from micropython import const
 from util import get_constant_name
 
@@ -62,10 +62,17 @@ class Spell:
         self._purpose = purpose
 
     def encode(self, encoder: BitEncoder):
-        encoder.add_bits(self._element, 4)
-        encoder.add_bits(self._shape, 4)
-        encoder.add_bits(self._purpose, 4)
+        encoder.write_bits(self._element, 4)
+        encoder.write_bits(self._shape, 4)
+        encoder.write_bits(self._purpose, 4)
 
+    @staticmethod
+    def decode(decoder: BitDecoder) -> "Spell":
+        element = decoder.read_bits(4)
+        shape = decoder.read_bits(4)
+        purpose = decoder.read_bits(4)
+        return Spell(element, shape, purpose)
+    
     @property
     def element(self) -> int:
         return self._element
@@ -97,3 +104,4 @@ class Spell:
         return (
             f"Spell(element={element_name}, shape={shape_name}, purpose={purpose_name})"
         )
+    

@@ -1,4 +1,4 @@
-from encoder import BitEncoder
+from encoder import BitDecoder, BitEncoder
 from spell.spell import Spell
 from spell.primary import PrimaryElementLevels
 
@@ -14,6 +14,12 @@ class SpellCast:
         self.spell.encode(encoder)
         self.levels.encode(encoder)
 
+    @staticmethod
+    def decode(decoder: BitDecoder) -> "SpellCast":
+        spell = Spell.decode(decoder)
+        levels = PrimaryElementLevels.decode(decoder)
+        return SpellCast(spell, levels)
+    
     @property
     def spell(self) -> Spell:
         return self._spell

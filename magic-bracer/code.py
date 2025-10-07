@@ -5,7 +5,7 @@
 import time
 import board
 import digitalio
-from encoder import EVENT_SPELL, BitEncoder
+from encoder import EVENT_SPELL, BitDecoder, BitEncoder
 from fixtures import HardcodedWeavingObserver, LoggingWeavingObserver
 import pulseio
 import keypad
@@ -25,7 +25,7 @@ from infrared import Infrared
 from player import Player
 from spell.aura import Aura, SpellCast, SpellHit
 from spell.spell_color import color_for_element, color_for_shape
-from spell.aura_shape import modify_aura
+from spell.aura_shape import AuraCaster, modify_aura
 
 # I2C
 i2c = board.I2C()
@@ -117,6 +117,16 @@ animation_observer = LEDAnimationWeavingObserver()
 weaving.observers.attach(animation_observer)
 
 
+def send_cast_via_infrared(cast: SpellCast, party_id: int):
+    encoder = BitEncoder()
+    encoder.write_event(EVENT_SPELL, party_id)
+    cast.encode(encoder)
+
+    encoded_bytes = encoder.to_bytes()
+    print("SpellCast encoded bytes: ", [bin(b) for b in encoded_bytes])
+    infrared.send(encoded_bytes)
+
+
 class InfraredWeavingObserver(ThingObserver):
     def spell_cast(self, thing: WeavingThing, spell: Spell):
         print("Player aura: ", player.aura.levels)
@@ -124,19 +134,24 @@ class InfraredWeavingObserver(ThingObserver):
         player.aura.modify_cast(cast)
         print("Modified cast: ", cast.levels)
 
-        encoder = BitEncoder()
-        encoder.add_event(EVENT_SPELL)
-        player.encode_ids(encoder)
-        cast.encode(encoder)
-
-        encoded_bytes = encoder.to_bytes()
-        print("SpellCast encoded bytes: ", [bin(b) for b in encoded_bytes])
-        infrared.send(encoded_bytes)
+        send_cast_via_infrared(cast, player.party_id)
 
 
 weaving.observers.attach(InfraredWeavingObserver())
 
-weaving.observers.attach(HardcodedWeavingObserver(player))
+
+class InfraredAuraCaster(AuraCaster):
+    def __init__(self, player: Player):
+        self.player = player
+
+    def cast(self, cast: SpellCast, aura: Aura, friendly: bool):
+        print("InfraredAuraCaster casting: ", cast)
+        send_cast_via_infrared(cast, self.player.party_id)
+
+
+caster = InfraredAuraCaster(player)
+
+# weaving.observers.attach(HardcodedWeavingObserver(player))
 
 last_tick = time.monotonic()
 
@@ -175,5 +190,17 @@ while True:
     if received is not None:
         data, margin = received
         print("IR Data Received: ", [hex(b) for b in data], margin)
+        decoder = BitDecoder(data)
+        event_id, party_id = decoder.read_event()
+        print("Decoded Event: ", event_id, party_id)
+        if event_id == EVENT_SPELL:
+            cast = SpellCast.decode(decoder)
+            friendly = False
+            # friendly = party_id == player.party_id  # temporarily disable friendliness by team
+            print("Decoded SpellCast: ", cast, " friendly: ", friendly)
+
+            hit = SpellHit(cast.spell, cast.levels, friendly)
+            modify_aura(hit, player.aura, caster)
+            print("Player aura after hit: ", player.aura.levels)
 
     player.update(elapsed_time)

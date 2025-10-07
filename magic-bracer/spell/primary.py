@@ -1,33 +1,33 @@
-from encoder import BitEncoder
+from encoder import BitDecoder, BitEncoder
 from spell.spell import SpellElement
 
 
 class PrimaryElementLevels:
-    def __init__(self, fire: float = 100, water: float = 100, earth: float = 100):
-        self._fire = fire
+    def __init__(self, water: float = 100, earth: float = 100, fire: float = 100):        
         self._water = water
         self._earth = earth
+        self._fire = fire
 
     @staticmethod
     def from_element(element: SpellElement) -> "PrimaryElementLevels":
         if element == SpellElement.WATER:
-            return PrimaryElementLevels(fire=0, water=1, earth=0)
+            return PrimaryElementLevels(water=1, earth=0, fire=0)
         elif element == SpellElement.EARTH:
-            return PrimaryElementLevels(fire=0, water=0, earth=1)
+            return PrimaryElementLevels(water=0, earth=1, fire=0)
         elif element == SpellElement.FIRE:
-            return PrimaryElementLevels(fire=1, water=0, earth=0)
+            return PrimaryElementLevels(water=0, earth=0, fire=1)
         elif element == SpellElement.LIGHT:
-            return PrimaryElementLevels(fire=0.5, water=0.25, earth=0.25)
+            return PrimaryElementLevels(water=0.25, earth=0.25, fire=0.5)
         elif element == SpellElement.DARK:
-            return PrimaryElementLevels(fire=0, water=0.5, earth=0.5)
+            return PrimaryElementLevels(water=0.5, earth=0.5, fire=0)
         elif element == SpellElement.ICE:
-            return PrimaryElementLevels(fire=0, water=0.5, earth=0.5)
+            return PrimaryElementLevels(water=0.5, earth=0.5, fire=0)
         elif element == SpellElement.AIR:
-            return PrimaryElementLevels(fire=0.5, water=0.5, earth=0)
+            return PrimaryElementLevels(water=0.5, earth=0, fire=0.5)
         elif element == SpellElement.LIGHTNING:
-            return PrimaryElementLevels(fire=0.5, water=0, earth=0.5)
+            return PrimaryElementLevels(water=0, earth=0.5, fire=0.5)
         elif element == SpellElement.TIME or element == SpellElement.GRAVITY:
-            return PrimaryElementLevels(fire=0.33, water=0.33, earth=0.34)
+            return PrimaryElementLevels(water=0.33, earth=0.34, fire=0.33)
         else:
             raise ValueError(f"Unknown element: {element}")
 
@@ -101,17 +101,16 @@ class PrimaryElementLevels:
         return remainder
 
     def encode(self, encoder: BitEncoder):
-        encoder.add_bits(int(self._fire), 8)
-        encoder.add_bits(int(self._water), 8)
-        encoder.add_bits(int(self._earth), 8)
-
-    @property
-    def fire(self) -> int:
-        return self._fire
-
-    @fire.setter
-    def fire(self, value: int):
-        self._fire = max(0, value)
+        encoder.write_bits(int(self._water), 8)
+        encoder.write_bits(int(self._earth), 8)
+        encoder.write_bits(int(self._fire), 8)        
+        
+    @staticmethod
+    def decode(decoder: BitDecoder) -> "PrimaryElementLevels":        
+        water = decoder.read_bits(8)
+        earth = decoder.read_bits(8)
+        fire = decoder.read_bits(8)
+        return PrimaryElementLevels(water, earth, fire)
 
     @property
     def water(self) -> int:
@@ -128,6 +127,14 @@ class PrimaryElementLevels:
     @earth.setter
     def earth(self, value: int):
         self._earth = max(0, value)
+        
+    @property
+    def fire(self) -> int:
+        return self._fire
+
+    @fire.setter
+    def fire(self, value: int):
+        self._fire = max(0, value)
 
     @property
     def empty(self) -> bool:

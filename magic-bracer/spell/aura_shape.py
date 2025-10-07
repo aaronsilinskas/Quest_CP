@@ -22,10 +22,11 @@ class ImmediateAuraModifier(AuraShapeModifier):
 
 class AreaOfEffectAuraModifier(AuraShapeModifier):
     def apply(self, hit: SpellHit, aura: Aura, caster: AuraCaster):
-        reduced_levels = PrimaryElementLevels()
-        reduced_levels.water = max(0, hit.levels.water / 2)
-        reduced_levels.earth = max(0, hit.levels.earth / 2)
-        reduced_levels.fire = max(0, hit.levels.fire / 2)
+        reduced_levels = PrimaryElementLevels(
+            water=max(0, hit.levels.water / 2),
+            earth=max(0, hit.levels.earth / 2),
+            fire=max(0, hit.levels.fire / 2),
+        )
 
         apply_purpose_to_aura(hit.spell.purpose, reduced_levels, aura)
 
@@ -84,10 +85,11 @@ class OverTimeActiveSpell(ActiveSpell):
         self.ticks = ticks
         self.tick_delay = tick_delay
         self.elapsed_since_tick = 0.0
-        self.tick_levels = PrimaryElementLevels()
-        self.tick_levels.water = hit.levels.water / self.ticks
-        self.tick_levels.earth = hit.levels.earth / self.ticks
-        self.tick_levels.fire = hit.levels.fire / self.ticks
+        self.tick_levels = PrimaryElementLevels(
+            water=hit.levels.water / self.ticks,
+            earth=hit.levels.earth / self.ticks,
+            fire=hit.levels.fire / self.ticks,
+        )
 
     def update(self, elapsed_time: float, aura: Aura) -> bool:
         self.elapsed_since_tick += elapsed_time
