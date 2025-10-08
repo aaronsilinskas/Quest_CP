@@ -84,6 +84,7 @@ last_imu_log = time.monotonic()
 # Player and Weaving State
 weaving = WeavingThing(starting_level=3)
 player = Player(id=1, party_id=1)
+player.aura.ambient_magic = 5.0  # faster ambient regen for demo
 
 
 weaving.observers.attach(LoggingWeavingObserver())
@@ -155,6 +156,8 @@ caster = InfraredAuraCaster(player)
 
 last_tick = time.monotonic()
 
+last_marker = time.monotonic()
+
 while True:
     elapsed_time = time.monotonic() - last_tick
     last_tick = time.monotonic()
@@ -168,6 +171,11 @@ while True:
         print("click")
         sound = not sound
         mixer.voice[0].stop()
+        
+        print("Restoring all aura levels to max")
+        player.aura.levels.water = player.aura.level_max
+        player.aura.levels.earth = player.aura.level_max
+        player.aura.levels.fire = player.aura.level_max
 
     if animation_observer.animation:
         animation_observer.animation.animate()
@@ -189,18 +197,22 @@ while True:
     received = infrared.receive()
     if received is not None:
         data, margin = received
-        print("IR Data Received: ", [hex(b) for b in data], margin)
+        print("IR Data Received: ", [hex(b) for b in data], "MARGIN:  ", margin)
         decoder = BitDecoder(data)
         event_id, party_id = decoder.read_event()
-        print("Decoded Event: ", event_id, party_id)
+        #print("Decoded Event: ", event_id, party_id)
         if event_id == EVENT_SPELL:
             cast = SpellCast.decode(decoder)
             friendly = False
             # friendly = party_id == player.party_id  # temporarily disable friendliness by team
-            print("Decoded SpellCast: ", cast, " friendly: ", friendly)
+            #print("Decoded SpellCast: ", cast, " friendly: ", friendly)
 
             hit = SpellHit(cast.spell, cast.levels, friendly)
             modify_aura(hit, player.aura, caster)
-            print("Player aura after hit: ", player.aura.levels)
+            #print("Player aura after hit: ", player.aura.levels)
 
     player.update(elapsed_time)
+    
+    if last_marker + 3 < time.monotonic():
+        last_marker = time.monotonic()
+        print(f"_-^^-_-^^-_-^^-_-^^-_-^^-_-^^-_-^^-_-^^-_")

@@ -87,10 +87,18 @@ class Aura:
     @property
     def ambient_magic(self) -> float:
         return self._ambient_magic
+    
+    @ambient_magic.setter
+    def ambient_magic(self, value: float):
+        self._ambient_magic = value
 
     @property
     def level_max(self) -> float:
         return self._level_max
+    
+    @level_max.setter
+    def level_max(self, value: float):
+        self._level_max = value
 
     def update(self, elapsed_time: float):
         self._elapsed_since_ambient_tick += elapsed_time
